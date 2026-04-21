@@ -34,5 +34,7 @@ scripts/deploy-hostinger.sh
 scripts/deploy-staging.sh
 
 dist/
+public-staging-contents.zip
+public-staging-upload.zip
 *.zip
 *.tar.gz
