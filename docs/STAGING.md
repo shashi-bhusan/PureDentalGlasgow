@@ -54,6 +54,20 @@ The **remote path** for staging is **not** the same as production `public_html` 
 
 (or the full path shown in **Subdomains → Directory**). See `scripts/deploy-staging.example.sh` — set `FTP_REMOTE_STAGING_DIR` to that path for `lftp`.
 
+## Troubleshooting
+
+### “You Are All Set to Go!” (Hostinger default page)
+
+The subdomain is working, but **no site files are in the staging folder yet** (or only Hostinger defaults). Fix:
+
+1. Open **hPanel → Files → File Manager**.
+2. Go to **`domains/puredentalglasgow.com/public_html/staging`** (or the path shown under **Subdomains → Directory**).
+3. **Delete** the default `default.php` / placeholder files there if you only want this project (optional).
+4. **Upload** a **zip** of everything inside this repo’s **`public/`** folder, then **Extract** so **`index.html`** is directly inside **`staging/`** (same level as `css/`, `js/`, etc.).
+5. Reload `https://staging.puredentalglasgow.com`.
+
+Wrong layout (common mistake): uploading a single folder named `public` so the site lives at `/staging/public/index.html`. The home page must be `/staging/index.html`.
+
 ## Local testing
 
 - Static preview: `./scripts/serve-local.sh` (`.php` may download — use PHP built-in server if needed; see main `README.md`).
