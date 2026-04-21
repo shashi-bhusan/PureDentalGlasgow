@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+	<Document>
+		<name>Locations for Pure Dental Care.</name>
+		<atom:link rel="related" href="http://puredentalglasgow.com" />
+		<Folder>
+			<Placemark>
+				<name><![CDATA[Pure Dental Care]]></name>
+				<address><![CDATA[1048 Cathcart Road, Mount Florida, G42 9XW, Mount Florida, G42 9XW, United Kingdom]]></address>
+				<phoneNumber><![CDATA[0141 569 3177]]></phoneNumber>
+				<description><![CDATA[]]></description>
+				<Point>
+					<coordinates>55.8243069,-4.2573308,0</coordinates>
+				</Point>
+			</Placemark>
+		</Folder>
+	</Document>
+</kml>

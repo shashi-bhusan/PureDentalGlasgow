@@ -6,37 +6,68 @@ Website project for [Pure Dental Care](https://www.puredentalglasgow.com/).
 
 | Branch | Use |
 |--------|-----|
-| `main` | Production — matches what is deployed live (e.g. Hostinger). |
-| `staging` | Testing — integrate and verify changes here before merging to `main`. |
+| `main` | Production — deploy from here to Hostinger after release. |
+| `staging` | Integration and testing — merge to `main` when ready to go live. |
 
-## Repository contents
+## Project layout
 
-- `scripts/mirror_site.py` — optional HTTP mirror of the public site for local preview (output goes to `site-mirror/`, which is not committed).
-- The live PHP application and full `public_html` backup should be added from Hostinger (FTP / File Manager) when you are ready to version that code.
+| Path | Purpose |
+|------|---------|
+| **`public/`** | **Deployable web root** — edit this folder for content and assets. Upload **its contents** to Hostinger **`public_html`** (or sync via FTP; see below). |
+| `site-mirror/` | Scratch output from the HTTP mirror script (gitignored). |
+| `scripts/mirror_site.py` | Crawls the live site and downloads linked HTML/CSS/JS/images into `site-mirror/`. |
+| `scripts/refresh-from-production.sh` | Re-downloads from production, then copies into `public/`. |
+| `scripts/sync_mirror_to_public.sh` | Copies `site-mirror/...` → `public/` only. |
+| `scripts/serve-local.sh` | Serves `public/` at `http://127.0.0.1:8765/`. |
+| `scripts/deploy-hostinger.example.sh` | Example FTP upload with `lftp` (copy to a **local** `deploy-hostinger.sh`, gitignored). |
 
-## Git remotes
+Read **`public/SOURCE.txt`** for important limits (PHP source, `.htaccess`).
+
+## Workflow: change → test → deploy
+
+1. Work on **`staging`** (or a feature branch off `staging`).
+2. Edit files under **`public/`**.
+3. Preview locally:
+
+   ```bash
+   ./scripts/serve-local.sh
+   ```
+
+   Open `http://127.0.0.1:8765/`.
+
+4. Commit and push `staging`, open a PR to `main` if you use reviews.
+5. Merge to **`main`**, then deploy **`public/`** to Hostinger (zip upload or FTP).
+
+## Refresh `public/` from the live site
+
+When you want to pull the latest **public HTTP** snapshot from production into `public/`:
+
+```bash
+./scripts/refresh-from-production.sh
+```
+
+Review diffs, then commit. This does **not** replace a full Hostinger file export (see `public/SOURCE.txt`).
+
+## Full Hostinger backup (recommended once)
+
+For **real PHP sources**, **`.htaccess`**, and server-only files, download **`public_html`** from Hostinger (File Manager → Compress → Download, or FTP). Merge those files into `public/` (or replace mirrored `.php` snapshots with real scripts) so Git matches production.
+
+## Git remote
 
 ```bash
 git remote -v
 # origin  https://github.com/shashi-bhusan/PureDentalGlasgow.git
 ```
 
-## Push from your machine
-
-Automated environments may not have GitHub credentials. After committing locally:
+## Push branches
 
 ```bash
 git push -u origin main
 git push -u origin staging
 ```
 
-Use a [Personal Access Token](https://github.com/settings/tokens) for HTTPS, or configure SSH (`git@github.com:shashi-bhusan/PureDentalGlasgow.git`).
+Use SSH or HTTPS with a [Personal Access Token](https://github.com/settings/tokens); do not commit tokens.
 
-## Local preview of HTTP mirror
+## Environment template
 
-```bash
-cd site-mirror/www.puredentalglasgow.com
-python3 -m http.server 8765 --bind 127.0.0.1
-```
-
-Open `http://127.0.0.1:8765/`.
+Copy `.env.example` to `.env` for local FTP tooling (`.env` is gitignored).

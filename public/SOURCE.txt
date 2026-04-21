@@ -1,0 +1,10 @@
+This folder is the deployable web root (Hostinger: upload contents into public_html).
+
+Origin: HTTP mirror of https://www.puredentalglasgow.com/ plus linked static assets.
+Regenerate: run scripts/refresh-from-production.sh from the repo root.
+
+Limits:
+- Files named *.php here are typically the HTML output returned by the live server, not necessarily the original PHP source on Hostinger.
+- .htaccess and server-only config are not included unless copied from Hostinger File Manager / FTP.
+
+For a full PHP source backup, export public_html from Hostinger and merge into this project.

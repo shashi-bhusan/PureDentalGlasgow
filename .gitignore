@@ -10,7 +10,9 @@ Thumbs.db
 
 # Env / secrets (never commit Hostinger or SMTP passwords)
 .env
-.env.*
+.env.local
+.env.production
+!.env.example
 *.pem
 
 # PHP
@@ -21,9 +23,15 @@ composer.phar
 *.log
 php_errors.log
 
-# Optional local mirror / build artifacts
+# Hostinger full dump name (if you keep a second copy outside public/)
 public_html/
+
+# Scratch mirror output (canonical tracked site is public/)
 site-mirror/
+
+# Local deploy script with real credentials
+scripts/deploy-hostinger.sh
+
 dist/
 *.zip
 *.tar.gz
