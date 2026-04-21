@@ -2,19 +2,27 @@
 
 Use this host for **QA and client review** before deploying the same build from `main` to production (`www.puredentalglasgow.com`).
 
+## Confirmed in hPanel (this project)
+
+| | |
+|---|---|
+| **URL** | `https://staging.puredentalglasgow.com` |
+| **Document root (server)** | `/home/<your-account>/domains/puredentalglasgow.com/public_html/staging` |
+
+In **File Manager** or **FTP** after login, the same location is usually reachable as:
+
+`domains/puredentalglasgow.com/public_html/staging`
+
+Upload the **contents** of this repo’s **`public/`** folder into that **`staging`** directory (so `index.html` sits directly inside `staging`, not nested in another `public` folder).
+
 ## What you need to do in Hostinger (once)
 
 These steps are done in **hPanel** for the Pure Dental Glasgow account. Exact labels can vary slightly.
 
-1. **Create a subdomain**
-   - Open **Domains** → **Subdomains** (or **Websites** → **Subdomains**).
-   - **Subdomain:** `staging`
-   - **Domain:** `puredentalglasgow.com`
-   - **Document root:** choose or create a dedicated folder, for example:
-     - `public_html/staging`  
-     or  
-     - `staging.puredentalglasgow.com` (Hostinger sometimes suggests a folder matching the subdomain).
-   - Save and wait until DNS shows **Active** (often a few minutes).
+1. **Subdomain** — Already created for this site:
+   - **Subdomain:** `staging.puredentalglasgow.com`
+   - **Directory:** `public_html/staging` (under the `puredentalglasgow.com` domain tree)
+   - If DNS is not active yet, wait until it shows **Active** in the subdomain list.
 
 2. **Optional: HTTPS**
    - In **SSL**, enable **Let’s Encrypt** (or AutoSSL) for `staging.puredentalglasgow.com`.
@@ -40,7 +48,11 @@ Typical flow:
 
 ## FTP / upload note
 
-The **remote path** for staging is **not** the same as production `public_html` root. Set your FTP client or `lftp` script to the folder you chose in step 1 (e.g. `.../public_html/staging`). See `scripts/deploy-staging.example.sh`.
+The **remote path** for staging is **not** the same as production `public_html` root. Point uploads at:
+
+`domains/puredentalglasgow.com/public_html/staging`
+
+(or the full path shown in **Subdomains → Directory**). See `scripts/deploy-staging.example.sh` — set `FTP_REMOTE_STAGING_DIR` to that path for `lftp`.
 
 ## Local testing
 

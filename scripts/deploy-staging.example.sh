@@ -2,8 +2,10 @@
 # Example: upload public/ to Hostinger STAGING document root (not production public_html).
 # Copy to deploy-staging.sh locally, fill FTP_*, run from repo root. Do not commit secrets.
 #
-# Typical staging path (verify in hPanel → Subdomains → document root):
-#   .../domains/puredentalglasgow.com/public_html/staging
+# Staging document root (hPanel → Subdomains → Directory), e.g.:
+#   domains/puredentalglasgow.com/public_html/staging
+# Full server path looks like:
+#   /home/<account>/domains/puredentalglasgow.com/public_html/staging
 #
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
