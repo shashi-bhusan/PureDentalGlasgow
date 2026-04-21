@@ -32,6 +32,17 @@ After the subdomain exists, test at **`https://staging.puredentalglasgow.com`**.
 
 Read **`public/SOURCE.txt`** for important limits (PHP source, `.htaccess`).
 
+## Automatic deploy (GitHub Actions → Hostinger)
+
+After you add **FTP secrets** once, **`git push`** can upload **`public/`** for you:
+
+- Push to **`staging`** → deploy to **staging** folder on Hostinger.
+- Push to **`main`** → deploy to **production** `public_html`.
+
+Setup and troubleshooting: **[docs/GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md)**.
+
+You can still deploy manually (zip / File Manager) anytime; Actions are optional.
+
 ## Workflow: change → test → deploy
 
 1. Work on **`staging`** (or a feature branch off `staging`).
@@ -44,9 +55,8 @@ Read **`public/SOURCE.txt`** for important limits (PHP source, `.htaccess`).
 
    Open `http://127.0.0.1:8765/`.
 
-4. Commit and push `staging`, open a PR to `main` if you use reviews.
-5. Deploy **`public/`** to **`staging.puredentalglasgow.com`** and test (see `docs/STAGING.md`).
-6. Merge to **`main`**, then deploy **`public/`** to **production** Hostinger (zip upload or FTP).
+4. Commit and push **`staging`** (triggers **Deploy staging** if secrets are set). Test **`https://staging.puredentalglasgow.com`** (see `docs/STAGING.md`).
+5. Merge **`staging` → `main`**, push **`main`** (triggers **Deploy production** if secrets are set). Or upload **`public/`** manually to Hostinger.
 
 ## Refresh `public/` from the live site
 
