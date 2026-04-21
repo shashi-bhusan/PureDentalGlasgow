@@ -1,0 +1,29 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env / secrets (never commit Hostinger or SMTP passwords)
+.env
+.env.*
+*.pem
+
+# PHP
+vendor/
+composer.phar
+
+# Logs & local server
+*.log
+php_errors.log
+
+# Optional local mirror / build artifacts
+public_html/
+site-mirror/
+dist/
+*.zip
+*.tar.gz
