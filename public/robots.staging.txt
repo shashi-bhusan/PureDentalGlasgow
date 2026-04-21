@@ -1,0 +1,5 @@
+# Use this file as robots.txt ONLY on the staging subdomain (e.g. staging.puredentalglasgow.com).
+# Rename to robots.txt when deploying to staging. Do not use on production.
+
+User-agent: *
+Disallow: /

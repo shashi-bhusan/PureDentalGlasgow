@@ -29,8 +29,9 @@ public_html/
 # Scratch mirror output (canonical tracked site is public/)
 site-mirror/
 
-# Local deploy script with real credentials
+# Local deploy scripts with real credentials
 scripts/deploy-hostinger.sh
+scripts/deploy-staging.sh
 
 dist/
 *.zip

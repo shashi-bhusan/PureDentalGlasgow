@@ -6,8 +6,14 @@ Website project for [Pure Dental Care](https://www.puredentalglasgow.com/).
 
 | Branch | Use |
 |--------|-----|
-| `main` | Production — deploy from here to Hostinger after release. |
-| `staging` | Integration and testing — merge to `main` when ready to go live. |
+| `main` | Production — deploy from here to Hostinger **live** site (`www`). |
+| `staging` | Pre-production — commit here first; deploy **`public/`** to the **staging subdomain** for testing, then merge to `main`. |
+
+### Staging URL (testing)
+
+Use Hostinger to create **`staging.puredentalglasgow.com`** pointing at a separate folder (not the live `public_html` root). Upload the same **`public/`** build there for QA. Full steps: **[docs/STAGING.md](docs/STAGING.md)**.
+
+After the subdomain exists, test at **`https://staging.puredentalglasgow.com`**. Use **`public/robots.staging.txt`** as **`robots.txt`** on staging only so Google does not index the copy.
 
 ## Project layout
 
@@ -19,7 +25,10 @@ Website project for [Pure Dental Care](https://www.puredentalglasgow.com/).
 | `scripts/refresh-from-production.sh` | Re-downloads from production, then copies into `public/`. |
 | `scripts/sync_mirror_to_public.sh` | Copies `site-mirror/...` → `public/` only. |
 | `scripts/serve-local.sh` | Serves `public/` at `http://127.0.0.1:8765/`. |
-| `scripts/deploy-hostinger.example.sh` | Example FTP upload with `lftp` (copy to a **local** `deploy-hostinger.sh`, gitignored). |
+| `scripts/deploy-hostinger.example.sh` | Example FTP upload to **production** `public_html` with `lftp`. |
+| `scripts/deploy-staging.example.sh` | Example FTP upload to **staging** document root (see `docs/STAGING.md`). |
+| `docs/STAGING.md` | Create **`staging.puredentalglasgow.com`** in Hostinger and deploy workflow. |
+| `public/robots.staging.txt` | Template for **`robots.txt` on staging only** (blocks crawlers). |
 
 Read **`public/SOURCE.txt`** for important limits (PHP source, `.htaccess`).
 
@@ -36,7 +45,8 @@ Read **`public/SOURCE.txt`** for important limits (PHP source, `.htaccess`).
    Open `http://127.0.0.1:8765/`.
 
 4. Commit and push `staging`, open a PR to `main` if you use reviews.
-5. Merge to **`main`**, then deploy **`public/`** to Hostinger (zip upload or FTP).
+5. Deploy **`public/`** to **`staging.puredentalglasgow.com`** and test (see `docs/STAGING.md`).
+6. Merge to **`main`**, then deploy **`public/`** to **production** Hostinger (zip upload or FTP).
 
 ## Refresh `public/` from the live site
 
