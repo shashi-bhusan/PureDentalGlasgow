@@ -35,8 +35,8 @@ jobs:
           server: ${{ steps.ftp_host.outputs.host }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ${{ vars.FTP_PROTOCOL || 'ftps-legacy' }}
-          port: ${{ vars.FTP_PORT || '990' }}
+          protocol: ${{ vars.FTP_PROTOCOL || 'ftps' }}
+          port: ${{ vars.FTP_PORT || '21' }}
           security: loose
           local-dir: ./public/
           server-dir: domains/puredentalglasgow.com/public_html/

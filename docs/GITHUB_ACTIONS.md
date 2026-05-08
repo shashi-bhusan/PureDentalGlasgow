@@ -34,14 +34,18 @@ If your FTP user’s home differs, edit **`server-dir`** in the workflow YAML.
 
 ## Optional: Repository **Variables** (no secrets — tune FTP mode)
 
-Workflows default to **implicit FTPS** (`protocol: ftps-legacy`, **port 990**), which matches many Hostinger accounts. If deploy still fails, add **Variables** (same Settings page → **Variables** tab):
+Workflows default to **explicit FTPS on port 21** (`ftps` + `21`), because GitHub-hosted runners often **time out** connecting to **port 990** (implicit FTPS), even when FileZilla works from your PC.
 
-| Variable | Example when 990 fails | Example when only plain FTP works |
-|----------|------------------------|-------------------------------------|
-| **`FTP_PORT`** | `21` | `21` |
-| **`FTP_PROTOCOL`** | `ftps` (explicit FTPS on 21) | `ftp` |
+If your Hostinger account **requires** implicit FTPS on 990, set **Variables** (Settings → Secrets and variables → Actions → **Variables**):
 
-Leave both variables **unset** to keep defaults (`990` + `ftps-legacy`).
+| Variable | Value |
+|----------|--------|
+| **`FTP_PORT`** | `990` |
+| **`FTP_PROTOCOL`** | `ftps-legacy` |
+
+If you must use **plain FTP** (insecure; only if Hostinger allows it): `FTP_PORT` = `21`, `FTP_PROTOCOL` = `ftp`.
+
+Leave both variables **unset** to use defaults (**21** + **ftps**).
 
 ## Day-to-day (no manual file upload)
 
@@ -60,6 +64,10 @@ Production (after merging to main):
 ```bash
 ./scripts/deploy-via-git-push.sh main "Release"
 ```
+
+## If the job fails: **`ETIMEDOUT … :990`**
+
+GitHub’s cloud runners often **cannot open port 990** to some hosts (firewall / routing). The workflows now default to **port 21 + explicit FTPS** instead. If you still need 990, you must use a runner that can reach it (e.g. self-hosted runner), or ask Hostinger whether **21 explicit FTPS** is supported for your FTP account.
 
 ## If the job fails: **`FTPError: 530 Login incorrect`**
 
