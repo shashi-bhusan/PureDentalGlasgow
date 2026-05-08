@@ -80,6 +80,13 @@ jobs:
           log-level: standard
           timeout: 600000
 
+      - name: Explain ETIMEDOUT (FTP never connected)
+        if: failure()
+        run: |
+          echo "::error::If the log above shows **connect ETIMEDOUT** to port 21 or 990, GitHub-hosted runners often **cannot reach** Hostinger FTP (blocking / firewall). Changing FTP_REMOTE_STAGING does **not** fix that."
+          echo "::error::Options: (1) Read **docs/HOSTINGER_GIT.md** — Hostinger pulls from GitHub (no GitHub→FTP connection). (2) **Re-run** the workflow (transient). (3) Repo **Variables** FTP_PORT=990, FTP_PROTOCOL=ftps-legacy if hPanel requires implicit FTPS on 990 — may still timeout. (4) **Hostinger support** — allow FTP from cloud/GitHub IPs. (5) **Manual** upload **public/** in File Manager."
+          echo "::notice::Full write-up: repo file docs/GITHUB_ACTIONS.md → section 'ETIMEDOUT'."
+
   # Confirms staging serves the new footer. curl exit 28 = GitHub runner ↔ Hostinger flake (not always wrong FTP).
   verify-staging-footer:
     needs: ftp-deploy

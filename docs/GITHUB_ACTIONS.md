@@ -1,5 +1,9 @@
 # GitHub Actions → Hostinger (automatic — no zip upload after setup)
 
+If your run fails with **`connect ETIMEDOUT … :21`** or **`:990`**, that is **not** a wrong `FTP_REMOTE_STAGING` — it means **GitHub’s runner cannot reach Hostinger FTP at all** (firewall / blocking datacenter IPs). **Path rules cannot fix that.** See **[Important: ETIMEDOUT](#important-etimedout-on-port-21-and-990)** below for Hostinger Git, manual upload, or support.
+
+---
+
 Workflows sync **`./public/`** to Hostinger over **FTPS** when you push, or when you run a workflow manually. **Default FTP paths are relative to Hostinger’s usual FTP chroot** (`public_html/staging/` for staging, `public_html/` for production). Override with Variables if your account starts in a different folder — see below.
 
 ## Important: **`ETIMEDOUT` on port 21 *and* 990**
