@@ -19,12 +19,12 @@ Secrets only store **FTP_SERVER**, **FTP_USERNAME**, **FTP_PASSWORD**. Path over
 
 | Variable | When to set |
 |----------|-------------|
-| **`FTP_REMOTE_STAGING`** | Only if defaults fail: path (with trailing `/`) from **FileZilla remote pane** to the folder that contains **`index.html`** for staging. Hostinger often chroots you under `domains/puredentalglasgow.com/`, so the workflow default is **`public_html/staging/`**. If your FTP home is the **account root** (you see a `domains/` folder first), use **`domains/puredentalglasgow.com/public_html/staging/`**. |
-| **`FTP_REMOTE_PRODUCTION`** | Same for live site; default **`public_html/`** when chrooted under the domain. |
+| **`FTP_REMOTE_STAGING`** | Only if defaults fail: path (with trailing `/`) from **FileZilla remote pane** to the folder that contains **`index.html`** for staging. Add as a **Variable** (recommended) or **Secret** — the workflow reads **`vars` first**, then **`secrets`**. Hostinger often chroots under `domains/puredentalglasgow.com/`, so the default is **`public_html/staging/`**. If FTP starts at **account home** (you see `domains/` first), use **`domains/puredentalglasgow.com/public_html/staging/`**. |
+| **`FTP_REMOTE_PRODUCTION`** | Same for live site (**Variable** or **Secret**); default **`public_html/`** when chrooted under the domain. |
 
 After each **Deploy staging** run, a **verify** step fetches `https://staging.puredentalglasgow.com/` and **fails the workflow** if the new footer text is missing — so a green run means staging really shows the new footer.
 
-If verify fails with **curl exit 28** (timeout), that is usually **GitHub runner → Hostinger HTTPS** (often **IPv6**); the workflow uses **IPv4 (`curl -4`)** and **retries**. If it still times out, open staging in your browser: if the footer is updated, the deploy worked and only the verify hop failed (re-run or ignore). If the footer is still old, fix **`FTP_REMOTE_STAGING`**.
+If verify fails with **curl exit 28** (timeout), that is usually **GitHub runner → Hostinger HTTPS** (often **IPv6**); the workflow uses **IPv4 (`curl -4`)** and **retries**. If it still times out, open staging in your browser: if the footer is updated, the deploy worked and only the verify hop failed (re-run or ignore). If the footer is still old, fix **`FTP_REMOTE_STAGING`** (Variable or Secret).
 
 ## Workflows
 
@@ -53,7 +53,7 @@ Files: `.github/workflows/deploy-staging.yml`, `deploy-production.yml`, `deploy-
 
 If uploads went to the wrong tree before (FTP green but site unchanged), you likely had **`domains/...` duplicated under a domain chroot** — the new defaults fix that for typical Hostinger FTP accounts.
 
-Override with **Variables** `FTP_REMOTE_STAGING` / `FTP_REMOTE_PRODUCTION` if your panel shows a different layout.
+Override with **Variables** (or **Secrets** with the same names) `FTP_REMOTE_STAGING` / `FTP_REMOTE_PRODUCTION` if your panel shows a different layout.
 
 ## Optional: Repository **Variables** (no secrets — tune FTP mode)
 

@@ -37,8 +37,8 @@ jobs:
       - name: Resolve remote path
         id: remote
         env:
-          STAGING_VAR: ${{ vars.FTP_REMOTE_STAGING }}
-          PROD_VAR: ${{ vars.FTP_REMOTE_PRODUCTION }}
+          STAGING_VAR: ${{ vars.FTP_REMOTE_STAGING || secrets.FTP_REMOTE_STAGING }}
+          PROD_VAR: ${{ vars.FTP_REMOTE_PRODUCTION || secrets.FTP_REMOTE_PRODUCTION }}
         run: |
           if [ "${{ github.event.inputs.target }}" = "staging" ]; then
             d="${STAGING_VAR:-public_html/staging/}"

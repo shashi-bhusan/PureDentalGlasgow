@@ -1,7 +1,7 @@
 # Deploy ONLY ./public/ to Hostinger staging.
 # Default server-dir is public_html/staging/ — Hostinger often chroots FTP inside domains/puredentalglasgow.com/,
 # so domains/.../public_html/staging/ would nest wrongly and the LIVE subdomain would never update.
-# Override with Variable FTP_REMOTE_STAGING if your FTP root is the account home (see docs/GITHUB_ACTIONS.md).
+# Override path: Repository Variable FTP_REMOTE_STAGING, or same name as a Secret (vars preferred).
 name: Deploy staging
 
 on:
@@ -35,7 +35,7 @@ jobs:
 
       - name: Show FTP target path (staging)
         run: |
-          echo "FTP server-dir=${{ vars.FTP_REMOTE_STAGING || 'public_html/staging/' }}"
+          echo "FTP server-dir=${{ vars.FTP_REMOTE_STAGING || secrets.FTP_REMOTE_STAGING || 'public_html/staging/' }}"
 
       # Default explicit FTPS on 21 (GitHub runners often time out on 990).
       # Override: Variables FTP_PORT=990 and FTP_PROTOCOL=ftps-legacy if your host requires implicit FTPS.
@@ -49,7 +49,7 @@ jobs:
           port: ${{ vars.FTP_PORT || '21' }}
           security: loose
           local-dir: ./public/
-          server-dir: ${{ vars.FTP_REMOTE_STAGING || 'public_html/staging/' }}
+          server-dir: ${{ vars.FTP_REMOTE_STAGING || secrets.FTP_REMOTE_STAGING || 'public_html/staging/' }}
           log-level: standard
           timeout: 600000
 
@@ -77,13 +77,13 @@ jobs:
           if [ "$rc" -ne 0 ]; then
             echo "::error::Could not download staging homepage (curl exit $rc). 28 = operation timed out — runner network/DNS to Hostinger."
             echo "::error::Open https://staging.puredentalglasgow.com/ in your browser to confirm the site; if the footer is new, you can ignore this flake or re-run."
-            echo "::error::If the footer is still old, fix FTP path Variable FTP_REMOTE_STAGING — see docs/GITHUB_ACTIONS.md"
+            echo "::error::If the footer is still old, fix FTP path (Variable or Secret FTP_REMOTE_STAGING) — see docs/GITHUB_ACTIONS.md"
             exit 1
           fi
           if echo "$html" | grep -q 'Healing Waters'; then
             echo "OK: staging homepage includes new footer."
           else
             echo "::error::Download succeeded but OLD footer still in HTML (no 'Healing Waters'). FTP likely wrote to the wrong folder."
-            echo "::error::Set GitHub Variable FTP_REMOTE_STAGING to the FileZilla path that contains staging index.html (trailing /)."
+            echo "::error::Set FTP_REMOTE_STAGING (repo Variable or Secret) to the FileZilla path that contains staging index.html (trailing /)."
             exit 1
           fi

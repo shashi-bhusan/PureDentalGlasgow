@@ -17,7 +17,7 @@ Many **FTP** accounts are **chrooted** under `domains/puredentalglasgow.com/`, s
 
 `public_html/staging`
 
-That is the **default `server-dir`** in **GitHub Actions** for this repo (override with Variable **`FTP_REMOTE_STAGING`** if your FTP home is the full account root — see **[GITHUB_ACTIONS.md](GITHUB_ACTIONS.md)**).
+That is the **default `server-dir`** in **GitHub Actions** for this repo (override with repo **Variable** or **Secret** **`FTP_REMOTE_STAGING`** if your FTP home is the full account root — see **[GITHUB_ACTIONS.md](GITHUB_ACTIONS.md)**).
 
 Upload the **contents** of this repo’s **`public/`** folder into that **`staging`** directory (so `index.html` sits directly inside `staging`, not nested in another `public` folder).
 

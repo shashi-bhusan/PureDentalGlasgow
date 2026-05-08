@@ -39,6 +39,6 @@ jobs:
           port: ${{ vars.FTP_PORT || '21' }}
           security: loose
           local-dir: ./public/
-          server-dir: ${{ vars.FTP_REMOTE_PRODUCTION || 'public_html/' }}
+          server-dir: ${{ vars.FTP_REMOTE_PRODUCTION || secrets.FTP_REMOTE_PRODUCTION || 'public_html/' }}
           log-level: standard
           timeout: 600000
