@@ -1,4 +1,5 @@
 # Deploy ONLY ./public/ to Hostinger staging.
+# Default: FTPS. If FTP ETIMEDOUT from GitHub, set Variable DEPLOY_STAGING_METHOD=ssh + STAGING_SSH_* secrets (rsync over SSH).
 # server-dir is relative to the FTP user’s directory after login (see “Diagnostic — FTPS list” in logs).
 # Override: Secret or Variable FTP_REMOTE_STAGING (Variable wins if non-empty after trim).
 name: Deploy staging
@@ -15,6 +16,7 @@ concurrency:
 
 jobs:
   ftp-deploy:
+    if: ${{ vars.DEPLOY_STAGING_METHOD != 'ssh' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -84,12 +86,65 @@ jobs:
         if: failure()
         run: |
           echo "::error::If the log above shows **connect ETIMEDOUT** to port 21 or 990, GitHub-hosted runners often **cannot reach** Hostinger FTP (blocking / firewall). Changing FTP_REMOTE_STAGING does **not** fix that."
-          echo "::error::Options: (1) Read **docs/HOSTINGER_GIT.md** — Hostinger pulls from GitHub (no GitHub→FTP connection). (2) **Re-run** the workflow (transient). (3) Repo **Variables** FTP_PORT=990, FTP_PROTOCOL=ftps-legacy if hPanel requires implicit FTPS on 990 — may still timeout. (4) **Hostinger support** — allow FTP from cloud/GitHub IPs. (5) **Manual** upload **public/** in File Manager."
+          echo "::error::Options: (1) **Set Variable `DEPLOY_STAGING_METHOD=ssh`** + **STAGING_SSH_*** secrets — bypasses FTP (see docs/GITHUB_ACTIONS.md). (2) Read **docs/HOSTINGER_GIT.md** — Hostinger pulls from GitHub. (3) **Re-run** the workflow (transient). (4) Repo **Variables** FTP_PORT=990, FTP_PROTOCOL=ftps-legacy — may still timeout. (5) **Hostinger support**. (6) **Manual** upload **public/** in File Manager."
           echo "::notice::Full write-up: repo file docs/GITHUB_ACTIONS.md → section 'ETIMEDOUT'."
+          echo "::notice::To bypass FTP from GitHub, set Variable DEPLOY_STAGING_METHOD=ssh and STAGING_SSH_* secrets — see docs/GITHUB_ACTIONS.md."
+
+  # Rsync over SSH — avoids Hostinger blocking FTP from GitHub datacenter IPs (ETIMEDOUT on :21).
+  ssh-deploy:
+    if: ${{ vars.DEPLOY_STAGING_METHOD == 'ssh' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write staging deploy check file
+        run: printf '%s %s\n' "${GITHUB_SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > public/STAGING_DEPLOY_CHECK.txt
+
+      - name: Validate SSH secrets
+        env:
+          H: ${{ secrets.STAGING_SSH_HOST }}
+          U: ${{ secrets.STAGING_SSH_USER }}
+          R: ${{ secrets.STAGING_SSH_REMOTE_PATH }}
+          K: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+        run: |
+          set -e
+          m=""
+          [ -z "${K:-}" ] && m="${m} STAGING_SSH_PRIVATE_KEY"
+          [ -z "${H:-}" ] && m="${m} STAGING_SSH_HOST"
+          [ -z "${U:-}" ] && m="${m} STAGING_SSH_USER"
+          [ -z "${R:-}" ] && m="${m} STAGING_SSH_REMOTE_PATH"
+          if [ -n "$m" ]; then
+            echo "::error::SSH deploy (staging): add repository Secrets:$m. Set Variable DEPLOY_STAGING_METHOD=ssh. See docs/GITHUB_ACTIONS.md (SSH deploy)."
+            exit 1
+          fi
+
+      - name: Rsync ./public/ to staging over SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          SSH_REMOTE_PATH: ${{ secrets.STAGING_SSH_REMOTE_PATH }}
+          SSH_PORT: ${{ vars.STAGING_SSH_PORT || '65002' }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_staging
+          chmod 600 ~/.ssh/id_staging
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          R="${SSH_REMOTE_PATH}"
+          case "$R" in */) ;; *) R="${R}/" ;; esac
+          rsync -avz --delete \
+            -e "ssh -i $HOME/.ssh/id_staging -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -p $SSH_PORT" \
+            ./public/ \
+            "${SSH_USER}@${SSH_HOST}:${R}"
+          rm -f ~/.ssh/id_staging
 
   # Confirms staging serves the new footer. curl exit 28 = GitHub runner ↔ Hostinger flake (not always wrong FTP).
   verify-staging-footer:
-    needs: ftp-deploy
+    needs: [ftp-deploy, ssh-deploy]
+    if: ${{ always() && (needs.ftp-deploy.result == 'success' || needs.ssh-deploy.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify new footer is live on staging
@@ -117,12 +172,12 @@ jobs:
           mrc=$?
           set -e
           if [ "$mrc" -ne 0 ] || ! echo "$marker" | tr -d '\r' | grep -q "^${EXPECT_SHA}"; then
-            echo "::error::STAGING_DEPLOY_CHECK.txt missing or does not start with this commit SHA. FTP is NOT writing the folder that serves https://staging.puredentalglasgow.com/ — FTP_REMOTE_STAGING is still wrong for this FTP user."
-            echo "::error::Open ftp-deploy → **Diagnostic — FTPS list remote root** and set FTP_REMOTE_STAGING to the path from that listing to your staging folder (or create an FTP sub-account whose home IS staging and set path to .)."
+            echo "::error::STAGING_DEPLOY_CHECK.txt missing or does not start with this commit SHA. Deploy did NOT write the document root for https://staging.puredentalglasgow.com/ — fix FTP_REMOTE_STAGING (FTP) or STAGING_SSH_REMOTE_PATH (SSH)."
+            echo "::error::FTP: open ftp-deploy → **Diagnostic — FTPS list remote root**. SSH: set STAGING_SSH_REMOTE_PATH to the hPanel absolute staging folder (see docs/GITHUB_ACTIONS.md)."
             echo "Marker HTTP exit=$mrc body (first 200 chars): ${marker:0:200}"
             exit 1
           fi
-          echo "OK: deploy marker visible at document root (FTP path matches this URL)."
+          echo "OK: deploy marker visible at document root (path matches this URL)."
           url="https://staging.puredentalglasgow.com/?_gha=$(date +%s)"
           echo "Fetching: $url"
           set +e
@@ -158,8 +213,8 @@ jobs:
           if echo "$html" | grep -q 'Healing Waters'; then
             echo "OK: staging homepage includes new footer."
           else
-            echo "::error::Download succeeded but OLD footer still in HTML (no 'Healing Waters'). FTP is not updating the URL's document root."
-            echo "::error::In GitHub: delete repository VARIABLE FTP_REMOTE_STAGING if you use a Secret (Variable overrides Secret). Open this run → job ftp-deploy → step **Diagnostic — FTPS list remote root**: if you see **domains** there, server-dir often must start with **domains/...**; if you only see **public_html**, use **public_html/staging/**. Match FileZilla for the **same** FTP user as GitHub."
+            echo "::error::Download succeeded but OLD footer still in HTML (no 'Healing Waters'). Deploy is not updating the URL's document root."
+            echo "::error::FTP: fix VARIABLE/Secret FTP_REMOTE_STAGING (see ftp-deploy diagnostics). SSH: check STAGING_SSH_REMOTE_PATH equals hPanel staging **Directory** (absolute path with /)."
             echo "---- Lines mentioning footer / rights (for debugging) ----"
             echo "$html" | grep -ni "pure dental\|healing\|maintained\|rights reserved\|copyright" | head -20 || true
             exit 1

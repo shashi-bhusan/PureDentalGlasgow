@@ -1,6 +1,6 @@
 # GitHub Actions → Hostinger (automatic — no zip upload after setup)
 
-If your run fails with **`connect ETIMEDOUT … :21`** or **`:990`**, that is **not** a wrong `FTP_REMOTE_STAGING` — it means **GitHub’s runner cannot reach Hostinger FTP at all** (firewall / blocking datacenter IPs). **Path rules cannot fix that.** See **[Important: ETIMEDOUT](#important-etimedout-on-port-21-and-990)** below for Hostinger Git, manual upload, or support.
+If your run fails with **`connect ETIMEDOUT … :21`** or **`:990`**, that is **not** a wrong `FTP_REMOTE_STAGING` — it means **GitHub’s runner cannot reach Hostinger FTP** (firewall / datacenter IP blocking). **Path rules cannot fix that.** Set **`DEPLOY_STAGING_METHOD=ssh`** and use **rsync over SSH** (see **Staging-only: SSH deploy** below), or see **Important: ETIMEDOUT**.
 
 ---
 
@@ -12,10 +12,26 @@ If FileZilla from your **own computer** works but GitHub Actions logs show **`co
 
 **Practical options (pick one):**
 
-1. **[Hostinger Git + webhook](HOSTINGER_GIT.md)** — Hostinger’s server **pulls** from GitHub (outbound to `github.com`). FTP is not used from GitHub → Hostinger, so this path usually works when FTP Actions fail.
-2. **Self-hosted GitHub Actions runner** (a small PC or VPS that *can* FTP to Hostinger) — same workflow, different runner.
-3. **Contact Hostinger support** — ask whether FTP from **GitHub Actions** IP ranges can be allowed, or for **SFTP/SSH deploy** details if your plan includes SSH.
-4. **Manual deploy** — zip `public/` and upload in File Manager (reliable fallback).
+1. **Staging via SSH (this repo)** — If **`ETIMEDOUT`** on FTP, set repository **Variable** **`DEPLOY_STAGING_METHOD`** to **`ssh`** and add the **SSH secrets** below. The workflow **rsync**s `./public/` over **SSH** (port **65002** on many Hostinger plans) instead of FTP — GitHub usually reaches SSH even when FTP is blocked. Uses **only** this repo’s secrets/variables.
+2. **[Hostinger Git + webhook](HOSTINGER_GIT.md)** — Hostinger’s server **pulls** from GitHub (outbound to `github.com`). FTP is not used from GitHub → Hostinger, so this path usually works when FTP Actions fail.
+3. **Self-hosted GitHub Actions runner** (a small PC or VPS that *can* FTP to Hostinger) — same workflow, different runner.
+4. **Contact Hostinger support** — ask whether FTP from **GitHub Actions** IP ranges can be allowed, or for **SFTP/SSH deploy** details if your plan includes SSH.
+5. **Manual deploy** — zip `public/` and upload in File Manager (reliable fallback).
+
+### Staging-only: SSH deploy (set when FTP shows **ETIMEDOUT**)
+
+In **hPanel → Advanced → SSH Access**, confirm **SSH is active** and note **username**, **host**, and **port** (often **65002**). Copy your **private** deploy key (PEM) into a GitHub secret — or generate an ED25519 key pair, add the **public** key under SSH Keys in hPanel.
+
+| Setting | Where |
+|--------|--------|
+| Repository **Variable** | **`DEPLOY_STAGING_METHOD`** = **`ssh`** (exactly) — omits FTP and uses rsync. **Unset** or anything else → FTP (default). |
+| **Secret** `STAGING_SSH_PRIVATE_KEY` | Full private key (multiline PEM / OpenSSH). |
+| **Secret** `STAGING_SSH_HOST` | SSH hostname or IP from hPanel (may differ from **FTP_SERVER**). |
+| **Secret** `STAGING_SSH_USER` | SSH username (often `u972471760` style). |
+| **Secret** `STAGING_SSH_REMOTE_PATH` | **Absolute** staging document root with trailing **`/`**, e.g. **`/home/u972471760/domains/puredentalglasgow.com/public_html/staging/`** (same folder as hPanel subdomain **Directory**). |
+| Optional **Variable** `STAGING_SSH_PORT` | Default **`65002`** if unset (Hostinger shared hosting). Use **`22`** if your panel says so. |
+
+**Production** still uses **`deploy-production.yml`** (FTP) until you add a similar SSH flow there; this SSH path is **staging only** to avoid widening scope.
 
 ### Repository **Variables** (optional paths — **not** Secrets)
 
@@ -23,6 +39,7 @@ Secrets only store **FTP_SERVER**, **FTP_USERNAME**, **FTP_PASSWORD**. Path over
 
 | Variable | When to set |
 |----------|-------------|
+| **`DEPLOY_STAGING_METHOD`** | Set to **`ssh`** to deploy staging with **rsync over SSH** instead of FTP (see **ETIMEDOUT** / SSH section above). Leave unset for FTP. |
 | **`FTP_REMOTE_STAGING`** | Only if defaults fail: path (with trailing `/`) from **FileZilla remote pane** to the folder that contains **`index.html`** for staging. **Variable** (recommended) or **Secret**. Resolution order: **trimmed Variable** if it has real characters; else **trimmed Secret**; else default **`public_html/staging/`**. A **Variable that is only spaces** no longer blocks a Secret. Hostinger often chroots under `domains/puredentalglasgow.com/`, so the default is **`public_html/staging/`**. If FTP starts at **account home** (you see `domains/` first), use **`domains/puredentalglasgow.com/public_html/staging/`**. |
 | **`FTP_REMOTE_PRODUCTION`** | Same for live site (**Variable** or **Secret**); default **`public_html/`** when chrooted under the domain. |
 | **`VERIFY_STAGING_SOFT_FAIL`** | Set to **`true`** only if **`verify-staging-footer`** often fails with **curl exit 28** (runner cannot reach Hostinger) but the site is fine in your browser. Skips strict failure on download timeout (footer is **not** verified when curl never succeeds). |
