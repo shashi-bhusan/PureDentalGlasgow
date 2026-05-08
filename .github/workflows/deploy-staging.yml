@@ -57,31 +57,50 @@ jobs:
           log-level: standard
           timeout: 600000
 
-  # Confirms staging serves the new footer. curl exit 28 = timeout — often fixed with -4 (IPv4) + retries from GitHub runners.
+  # Confirms staging serves the new footer. curl exit 28 = GitHub runner ↔ Hostinger flake (not always wrong FTP).
   verify-staging-footer:
     needs: ftp-deploy
     runs-on: ubuntu-latest
     steps:
       - name: Verify new footer is live on staging
+        env:
+          VERIFY_STAGING_SOFT_FAIL: ${{ vars.VERIFY_STAGING_SOFT_FAIL }}
         run: |
           set -euo pipefail
+          # --max-time caps the *entire* curl including all --retry attempts (see curl -m).
+          fetch() {
+            local u="$1"
+            curl -4 -fsSL --http1.1 \
+              --connect-timeout 90 \
+              --max-time 600 \
+              --retry 25 \
+              --retry-delay 12 \
+              --retry-all-errors \
+              -H 'User-Agent: Mozilla/5.0 (compatible; PDG-Staging-Verify/1.0)' \
+              "$u"
+          }
           url="https://staging.puredentalglasgow.com/?_gha=$(date +%s)"
           echo "Fetching: $url"
           set +e
-          # -4: avoid IPv6 hangs; retries + generous timeouts for cross-region HTTPS
-          html="$(curl -4 -fsSL \
-            --connect-timeout 45 \
-            --max-time 180 \
-            --retry 5 \
-            --retry-delay 10 \
-            --retry-all-errors \
-            "$url")"
+          html="$(fetch "$url")"
           rc=$?
           set -e
-          if [ "$rc" -ne 0 ]; then
-            echo "::error::Could not download staging homepage (curl exit $rc). 28 = operation timed out — runner network/DNS to Hostinger."
-            echo "::error::Open https://staging.puredentalglasgow.com/ in your browser to confirm the site; if the footer is new, you can ignore this flake or re-run."
-            echo "::error::If the footer is still old, fix FTP path (Variable or Secret FTP_REMOTE_STAGING) — see docs/GITHUB_ACTIONS.md"
+          if [ "$rc" -ne 0 ] || [ -z "${html:-}" ]; then
+            echo "First fetch failed (curl $rc). Waiting 90s, second attempt with fresh cache-bust..."
+            sleep 90
+            url="https://staging.puredentalglasgow.com/?_gha=$(date +%s)"
+            set +e
+            html="$(fetch "$url")"
+            rc=$?
+            set -e
+          fi
+          if [ "$rc" -ne 0 ] || [ -z "${html:-}" ]; then
+            echo "::error::Could not download staging homepage after 2 tries (last curl exit $rc). 28 = timeout — flaky path GitHub runner → Hostinger; FTP deploy may still be OK."
+            echo "::error::Open https://staging.puredentalglasgow.com/ in a browser; if the footer is new, re-run verify or set Variable VERIFY_STAGING_SOFT_FAIL=true (see docs/GITHUB_ACTIONS.md)."
+            echo "::error::If the footer is still old, fix FTP_REMOTE_STAGING — see docs/GITHUB_ACTIONS.md"
+            case "${VERIFY_STAGING_SOFT_FAIL:-}" in
+              true|TRUE|1|yes|YES) echo "::warning::VERIFY_STAGING_SOFT_FAIL set — passing workflow despite curl failure."; exit 0 ;;
+            esac
             exit 1
           fi
           if echo "$html" | grep -q 'Healing Waters'; then

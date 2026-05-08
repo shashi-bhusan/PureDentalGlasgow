@@ -21,10 +21,16 @@ Secrets only store **FTP_SERVER**, **FTP_USERNAME**, **FTP_PASSWORD**. Path over
 |----------|-------------|
 | **`FTP_REMOTE_STAGING`** | Only if defaults fail: path (with trailing `/`) from **FileZilla remote pane** to the folder that contains **`index.html`** for staging. **Variable** (recommended) or **Secret**. Resolution order: **trimmed Variable** if it has real characters; else **trimmed Secret**; else default **`public_html/staging/`**. A **Variable that is only spaces** no longer blocks a Secret. Hostinger often chroots under `domains/puredentalglasgow.com/`, so the default is **`public_html/staging/`**. If FTP starts at **account home** (you see `domains/` first), use **`domains/puredentalglasgow.com/public_html/staging/`**. |
 | **`FTP_REMOTE_PRODUCTION`** | Same for live site (**Variable** or **Secret**); default **`public_html/`** when chrooted under the domain. |
+| **`VERIFY_STAGING_SOFT_FAIL`** | Set to **`true`** only if **`verify-staging-footer`** often fails with **curl exit 28** (runner cannot reach Hostinger) but the site is fine in your browser. Skips strict failure on download timeout (footer is **not** verified when curl never succeeds). |
 
-After each **Deploy staging** run, a **verify** step fetches `https://staging.puredentalglasgow.com/` and **fails the workflow** if the new footer text is missing — so a green run means staging really shows the new footer.
+After each **Deploy staging** run, a **verify** step fetches `https://staging.puredentalglasgow.com/` and **fails the workflow** if the new footer text is missing — so a green run means staging really shows the new footer (unless **`VERIFY_STAGING_SOFT_FAIL`** bypassed a curl failure).
 
-If verify fails with **curl exit 28** (timeout), that is usually **GitHub runner → Hostinger HTTPS** (often **IPv6**); the workflow uses **IPv4 (`curl -4`)** and **retries**. If it still times out, open staging in your browser: if the footer is updated, the deploy worked and only the verify hop failed (re-run or ignore). If the footer is still old, fix **`FTP_REMOTE_STAGING`** (Variable or Secret).
+If verify fails with **curl exit 28** (timeout), that is usually a **transient** path **GitHub-hosted runner → Hostinger** (not proof of a bad FTP upload). The workflow uses **IPv4 (`curl -4`)**, **HTTP/1.1**, and a **long single `curl` with many retries** (total time capped by `curl -m`). If it still times out:
+
+1. Open **`https://staging.puredentalglasgow.com/`** in your browser — if the footer is already **Healing Waters**, the deploy worked; **re-run the failed job** or merge knowing FTP was green.
+2. Optional: set repository **Variable** **`VERIFY_STAGING_SOFT_FAIL`** to **`true`** — the verify step will **warn** but **not fail** the workflow when `curl` cannot reach staging (footer is **not** checked in that case). Use only if you accept CI green without automated footer confirmation.
+
+If the footer in the browser is **still old**, fix **`FTP_REMOTE_STAGING`** (Variable or Secret), not the verify timeouts.
 
 ## Workflows
 
