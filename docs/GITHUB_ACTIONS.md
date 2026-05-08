@@ -13,7 +13,16 @@ If FileZilla from your **own computer** works but GitHub Actions logs show **`co
 3. **Contact Hostinger support** — ask whether FTP from **GitHub Actions** IP ranges can be allowed, or for **SFTP/SSH deploy** details if your plan includes SSH.
 4. **Manual deploy** — zip `public/` and upload in File Manager (reliable fallback).
 
-To **stop wasting minutes** on failing FTP runs while you use Git or manual deploy: add a repository **Variable** **`SKIP_FTP`** = `true` (Settings → Secrets and variables → Actions → **Variables**). The FTP jobs will be skipped; remove the variable when FTP is working again.
+### Repository **Variables** (optional paths — **not** Secrets)
+
+Secrets only store **FTP_SERVER**, **FTP_USERNAME**, **FTP_PASSWORD**. Path overrides live under **Settings → Secrets and variables → Actions → Variables** (a separate tab from **Secrets**):
+
+| Variable | When to set |
+|----------|-------------|
+| **`FTP_REMOTE_STAGING`** | If FTP “succeeds” but **staging still shows the old site** — set to the exact remote folder (with trailing `/`) where `index.html` must live, as shown in **FileZilla** after you navigate to staging. Examples: `domains/puredentalglasgow.com/public_html/staging/` or `public_html/staging/` depending on where your FTP session starts. |
+| **`FTP_REMOTE_PRODUCTION`** | Same idea for live `public_html/` if the default path is wrong. |
+
+After each **Deploy staging** run, a **verify** step fetches `https://staging.puredentalglasgow.com/` and **fails the workflow** if the new footer text is missing — so a green run means staging really updated (or the verify step could not reach the URL).
 
 ## Workflows
 

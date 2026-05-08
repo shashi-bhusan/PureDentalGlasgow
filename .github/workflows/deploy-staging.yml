@@ -15,8 +15,6 @@ concurrency:
 
 jobs:
   ftp-deploy:
-    # Set repo Variable SKIP_FTP=true if Hostinger blocks GitHub's IPs (ETIMEDOUT on 21/990) — use Hostinger Git or manual upload instead.
-    if: ${{ vars.SKIP_FTP != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -46,6 +44,26 @@ jobs:
           port: ${{ vars.FTP_PORT || '21' }}
           security: loose
           local-dir: ./public/
-          server-dir: domains/puredentalglasgow.com/public_html/staging/
+          # Override path if deploy succeeds but site unchanged: repo Variable FTP_REMOTE_STAGING (must end with /), e.g. public_html/staging/
+          server-dir: ${{ vars.FTP_REMOTE_STAGING || 'domains/puredentalglasgow.com/public_html/staging/' }}
           log-level: standard
           timeout: 600000
+
+  # Fails the workflow if FTP reported success but staging URL still has the old footer (wrong remote path or cache).
+  verify-staging-footer:
+    needs: ftp-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify new footer is live on staging
+        run: |
+          set -euo pipefail
+          url="https://staging.puredentalglasgow.com/?_gha=$(date +%s)"
+          html="$(curl -fsSL --max-time 90 "$url")"
+          if echo "$html" | grep -q 'Healing Waters'; then
+            echo "OK: staging homepage includes new footer."
+          else
+            echo "::error::Staging still shows the OLD footer after FTP. The upload likely went to the wrong folder."
+            echo "::error::In FileZilla, open the staging folder that contains index.html and copy the remote path from the status bar."
+            echo "::error::Then add GitHub repo Variable FTP_REMOTE_STAGING (trailing slash) to match — see docs/GITHUB_ACTIONS.md"
+            exit 1
+          fi

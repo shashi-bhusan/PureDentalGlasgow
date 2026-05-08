@@ -13,7 +13,6 @@ concurrency:
 
 jobs:
   ftp-deploy:
-    if: ${{ vars.SKIP_FTP != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -40,6 +39,6 @@ jobs:
           port: ${{ vars.FTP_PORT || '21' }}
           security: loose
           local-dir: ./public/
-          server-dir: domains/puredentalglasgow.com/public_html/
+          server-dir: ${{ vars.FTP_REMOTE_PRODUCTION || 'domains/puredentalglasgow.com/public_html/' }}
           log-level: standard
           timeout: 600000
