@@ -25,7 +25,7 @@ Secrets only store **FTP_SERVER**, **FTP_USERNAME**, **FTP_PASSWORD**. Path over
 
 After each **Deploy staging** run, a **verify** step fetches `https://staging.puredentalglasgow.com/` and **fails the workflow** if the new footer text is missing — so a green run means staging really shows the new footer (unless **`VERIFY_STAGING_SOFT_FAIL`** bypassed a curl failure).
 
-If verify fails with **curl exit 28** (timeout), that is usually a **transient** path **GitHub-hosted runner → Hostinger** (not proof of a bad FTP upload). The workflow uses **IPv4 (`curl -4`)**, **HTTP/1.1**, and a **long single `curl` with many retries** (total time capped by `curl -m`). If it still times out:
+If verify fails with **curl exit 28** (timeout) or outer **exit 124** (`timeout` killed `curl`), that is usually a **transient** path **GitHub-hosted runner → Hostinger** (not proof of a bad FTP upload). The workflow uses **IPv4 (`curl -4`)**, **HTTP/1.1**, modest retries, and a **`timeout` wrapper** so verify cannot hang for hours. If it still times out:
 
 1. Open **`https://staging.puredentalglasgow.com/`** in your browser — if the footer is already **Healing Waters**, the deploy worked; **re-run the failed job** or merge knowing FTP was green.
 2. Optional: set repository **Variable** **`VERIFY_STAGING_SOFT_FAIL`** to **`true`** — the verify step will **warn** but **not fail** the workflow when `curl` cannot reach staging (footer is **not** checked in that case). Use only if you accept CI green without automated footer confirmation.
