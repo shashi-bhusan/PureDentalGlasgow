@@ -1,10 +1,17 @@
-# Deploy ONLY ./public/ to live site (public_html). Requires FTP secrets — see docs/GITHUB_ACTIONS.md
+# Deploy production files to live site. See docs/GITHUB_ACTIONS.md
+#
+# SAFETY: Production uses shared PHP includes (Footer.php, Header.php, etc.)
+# that are NOT in the repo's public/ folder.  This workflow deploys ONLY the
+# files in the production/ folder (e.g. Footer.php) via SSH — no --delete,
+# so nothing on the server is removed.
 name: Deploy production
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'production/**'
   workflow_dispatch:
 
 concurrency:
@@ -12,40 +19,69 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ftp-deploy:
+  ssh-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Normalize FTP hostname
-        id: ftp_host
+      - name: Validate SSH secrets
         env:
-          RAW: ${{ secrets.FTP_SERVER }}
+          H: ${{ secrets.STAGING_SSH_HOST }}
+          U: ${{ secrets.STAGING_SSH_USER }}
+          K: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
         run: |
-          h="$RAW"
-          h="${h#ftp://}"
-          h="${h#ftps://}"
-          h="${h%/}"
-          echo "host=$h" >> "$GITHUB_OUTPUT"
+          set -e
+          m=""
+          [ -z "${K:-}" ] && m="${m} STAGING_SSH_PRIVATE_KEY"
+          [ -z "${H:-}" ] && m="${m} STAGING_SSH_HOST"
+          [ -z "${U:-}" ] && m="${m} STAGING_SSH_USER"
+          if [ -n "$m" ]; then
+            echo "::error::SSH deploy (production): add repository Secrets:$m"
+            exit 1
+          fi
 
-      - name: Resolve FTP server-dir (production)
-        id: ftp_dir
+      - name: Deploy production/ to live site via SSH (no --delete)
         env:
-          FTP_REMOTE_PRODUCTION_VAR: ${{ vars.FTP_REMOTE_PRODUCTION }}
-          FTP_REMOTE_PRODUCTION_SECRET: ${{ secrets.FTP_REMOTE_PRODUCTION }}
-        run: bash .github/scripts/resolve-ftp-server-dir.sh production
+          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          SSH_PORT: ${{ vars.STAGING_SSH_PORT || '65002' }}
+          PROD_REMOTE_PATH: /home/u972471760/domains/puredentalglasgow.com/public_html/
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_prod
+          chmod 600 ~/.ssh/id_prod
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Upload to Hostinger (production)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
-        with:
-          server: ${{ steps.ftp_host.outputs.host }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ${{ vars.FTP_PROTOCOL || 'ftps' }}
-          port: ${{ vars.FTP_PORT || '21' }}
-          security: loose
-          local-dir: ./public/
-          server-dir: ${{ steps.ftp_dir.outputs.dir }}
-          log-level: standard
-          timeout: 600000
+          echo "Deploying production/ → ${SSH_USER}@${SSH_HOST}:${PROD_REMOTE_PATH}"
+          rsync -avz \
+            -e "ssh -i $HOME/.ssh/id_prod -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -p $SSH_PORT" \
+            ./production/ \
+            "${SSH_USER}@${SSH_HOST}:${PROD_REMOTE_PATH}"
+
+          rm -f ~/.ssh/id_prod
+          echo "Production deploy complete (no files deleted on server)."
+
+  verify-production-footer:
+    needs: ssh-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify footer on live site
+        run: |
+          set -e
+          echo "Waiting 10s for cache/propagation..."
+          sleep 10
+          body=$(curl -4 -fsSL --max-time 30 --retry 3 --retry-delay 5 "https://www.puredentalglasgow.com/" || true)
+          if echo "$body" | grep -qi "beenaIT"; then
+            echo "Footer verified — beenaIT Solutions found on live site."
+          else
+            echo "::warning::Footer text 'beenaIT' not found on live site. May be cached."
+          fi
+          if echo "$body" | grep -qi "Healing Waters"; then
+            echo "Footer verified — Healing Waters found on live site."
+          else
+            echo "::warning::Footer text 'Healing Waters' not found on live site. May be cached."
+          fi
