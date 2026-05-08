@@ -14,7 +14,8 @@ Do these in order:
 2. **Get the path from FileZilla, not from File Manager**  
    After login, open folders on the **right (remote)** side until you see the **`index.html`** that really belongs to staging (you can edit a test file and refresh the site to confirm).  
    Look at the **path / breadcrumb** FileZilla shows for that folder.  
-   **Important:** hPanel **File Manager** sometimes shows **`files/public_html/...`**. FTP often **does not** use the same string. If you copied **`files/public_html/staging/`** from the browser/File Manager, try **`public_html/staging/`** instead (no `files/` prefix), **or** whatever FileZilla actually shows after step 1.
+   **Important:** hPanel **File Manager** sometimes shows **`files/public_html/...`**. FTP often **does not** use the same string. If you copied **`files/public_html/staging/`** from the browser/File Manager, try **`public_html/staging/`** instead (no `files/` prefix), **or** whatever FileZilla actually shows after step 1.  
+   If the browser address looks like **`https://srvXXXX-files.hstgr.io/…/files/public_html/staging/`**, that host is **only for the file manager in the browser** — your GitHub FTP secrets still use your normal **FTP hostname** from hPanel; **`FTP_REMOTE_STAGING`** should **not** contain `hstgr.io` or the long random segment, only the folder path relative to FTP (usually **`public_html/staging/`**).
 
 3. **Put that path in GitHub (one place only)**  
    - Go to **GitHub → your repo → Settings → Secrets and variables → Actions**.  
