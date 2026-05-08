@@ -31,9 +31,9 @@ These steps are done in **hPanel** for the Pure Dental Glasgow account. Exact la
    - After you upload the site, copy **`public/robots.staging.txt`** to **`robots.txt`** in the **staging** document root only (see file contents — it disallows all crawlers).
    - Do **not** deploy this `robots.txt` to production; production should keep a normal `robots.txt` / sitemap policy.
 
-## Automatic uploads
+## Automatic uploads (no zip)
 
-To deploy **`public/`** on every **`git push`** to `staging` (or `main` for production), configure **GitHub Actions** and FTP secrets: **[GITHUB_ACTIONS.md](GITHUB_ACTIONS.md)**.
+Add **three** GitHub Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`) — see **[GITHUB_ACTIONS.md](GITHUB_ACTIONS.md)** — then **`git push origin staging`** deploys `./public/` into this folder automatically.
 
 ## Git workflow (this repo)
 

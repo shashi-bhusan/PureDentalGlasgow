@@ -1,5 +1,4 @@
-# Deploy public/ to Hostinger production when you push main (or run manually).
-# Use branch protection on main if you want PR-only merges.
+# Deploy ONLY ./public/ to live site (public_html). Requires FTP secrets — see docs/GITHUB_ACTIONS.md
 name: Deploy production
 
 on:
@@ -29,6 +28,6 @@ jobs:
           port: 21
           security: loose
           local-dir: ./public/
-          server-dir: ${{ secrets.FTP_REMOTE_PRODUCTION }}
+          server-dir: domains/puredentalglasgow.com/public_html/
           log-level: standard
           timeout: 600000

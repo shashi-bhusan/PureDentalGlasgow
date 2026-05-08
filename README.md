@@ -19,29 +19,32 @@ After the subdomain exists, test at **`https://staging.puredentalglasgow.com`**.
 
 | Path | Purpose |
 |------|---------|
-| **`public/`** | **Deployable web root** — edit this folder for content and assets. Upload **its contents** to Hostinger **`public_html`** (or sync via FTP; see below). |
+| **`public/`** | **Deployable web root** — edit here; **`git push`** deploys via **GitHub Actions** after FTP secrets are set (see **[docs/GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md)**). |
 | `site-mirror/` | Scratch output from the HTTP mirror script (gitignored). |
 | `scripts/mirror_site.py` | Crawls the live site and downloads linked HTML/CSS/JS/images into `site-mirror/`. |
 | `scripts/refresh-from-production.sh` | Re-downloads from production, then copies into `public/`. |
 | `scripts/sync_mirror_to_public.sh` | Copies `site-mirror/...` → `public/` only. |
 | `scripts/serve-local.sh` | Serves `public/` at `http://127.0.0.1:8765/`. |
 | `scripts/deploy-hostinger.example.sh` | Example FTP upload to **production** `public_html` with `lftp`. |
-| `scripts/deploy-staging.example.sh` | Example FTP upload to **staging** document root (see `docs/STAGING.md`). |
-| `docs/STAGING.md` | Create **`staging.puredentalglasgow.com`** in Hostinger and deploy workflow. |
+| `scripts/deploy-staging.example.sh` | Example FTP upload to **staging** (optional if Actions work). |
+| `scripts/deploy-via-git-push.sh` | **`./scripts/deploy-via-git-push.sh staging "msg"`** → push branch and trigger Actions deploy (no zip). |
+| `docs/STAGING.md` | Staging subdomain and folder on Hostinger. |
+| `docs/HOSTINGER_GIT.md` | Optional: Hostinger native **Git** + webhook instead of Actions. |
 | `public/robots.staging.txt` | Template for **`robots.txt` on staging only** (blocks crawlers). |
 
 Read **`public/SOURCE.txt`** for important limits (PHP source, `.htaccess`).
 
-## Automatic deploy (GitHub Actions → Hostinger)
+## Automatic deploy (GitHub Actions → Hostinger — recommended)
 
-After you add **FTP secrets** once, **`git push`** can upload **`public/`** for you:
+Configure **three** repo secrets (**`FTP_SERVER`**, **`FTP_USERNAME`**, **`FTP_PASSWORD`**). Paths are baked into the workflows.
 
-- Push to **`staging`** → deploy to **staging** folder on Hostinger.
-- Push to **`main`** → deploy to **production** `public_html`.
+- **`git push origin staging`** → **Deploy staging** uploads `./public/` to `public_html/staging/`.
+- **`git push origin main`** → **Deploy production** uploads to `public_html/`.
+- Or **Actions → Deploy manual → Run workflow** to pick staging or production without remembering branch rules.
 
-Setup and troubleshooting: **[docs/GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md)**.
+Helpers: **`./scripts/deploy-via-git-push.sh staging "message"`** · Full guide: **[docs/GITHUB_ACTIONS.md](docs/GITHUB_ACTIONS.md)** · Alternative: **[docs/HOSTINGER_GIT.md](docs/HOSTINGER_GIT.md)**.
 
-You can still deploy manually (zip / File Manager) anytime; Actions are optional.
+Manual zip/File Manager remains a fallback only.
 
 ## Workflow: change → test → deploy
 

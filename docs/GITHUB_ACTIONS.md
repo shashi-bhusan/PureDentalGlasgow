@@ -1,51 +1,68 @@
-# GitHub Actions → Hostinger (automatic deploy)
+# GitHub Actions → Hostinger (automatic — no zip upload after setup)
 
-Pushing **`staging`** or **`main`** can upload **`public/`** to Hostinger over **FTPS** so you do not need to zip/upload by hand each time.
+Workflows sync **`./public/`** to Hostinger over **FTPS** when you push, or when you run a workflow manually. **Remote folders are fixed in YAML** (`domains/puredentalglasgow.com/…`) — you only configure FTP login secrets.
 
 ## Workflows
 
-| Workflow | When it runs | Target (secret) |
-|----------|----------------|-----------------|
-| **Deploy staging** | Push to `staging`, or **Actions → Deploy staging → Run workflow** | `FTP_REMOTE_STAGING` |
-| **Deploy production** | Push to `main`, or manual run | `FTP_REMOTE_PRODUCTION` |
+| Workflow | When it runs |
+|----------|----------------|
+| **Deploy staging** | Every push to branch **`staging`** |
+| **Deploy production** | Every push to branch **`main`** |
+| **Deploy manual** | **Actions → Deploy manual → Run workflow** → choose staging or production (uses current branch snapshot) |
 
-Files: `.github/workflows/deploy-staging.yml`, `.github/workflows/deploy-production.yml`.
+Files: `.github/workflows/deploy-staging.yml`, `deploy-production.yml`, `deploy-manual.yml`.
 
-## One-time setup: GitHub Secrets
+## One-time setup (only 3 secrets)
 
-In the repo: **Settings → Secrets and variables → Actions → New repository secret**.
+**GitHub repo → Settings → Secrets and variables → Actions → New repository secret**
 
-| Secret | Example / notes |
-|--------|------------------|
-| **`FTP_SERVER`** | From hPanel **Files → FTP Accounts** (e.g. `ftp.puredentalglasgow.com` or the hostname shown there). |
-| **`FTP_USERNAME`** | FTP user (often **not** the same as hPanel login). |
-| **`FTP_PASSWORD`** | That FTP account’s password. |
-| **`FTP_REMOTE_STAGING`** | Remote folder **relative to FTP home**, with trailing slash. For this project: `domains/puredentalglasgow.com/public_html/staging/` |
-| **`FTP_REMOTE_PRODUCTION`** | Production web root, trailing slash: `domains/puredentalglasgow.com/public_html/` |
+| Secret | Where to find it |
+|--------|-------------------|
+| **`FTP_SERVER`** | hPanel → **FTP Accounts** (hostname, e.g. `ftp.puredentalglasgow.com`) |
+| **`FTP_USERNAME`** | FTP username (often **not** your hPanel email) |
+| **`FTP_PASSWORD`** | FTP password |
 
-**Finding `server-dir`:** connect with **FileZilla** (or Hostinger’s online FTP). The path you see to `staging` after login is what should go in the secret (Hostinger usually starts at `/home/...` in full paths, but FTP often drops you in the home folder where paths begin with `domains/`).
+**No path secrets.** Staging uploads to:
+
+`domains/puredentalglasgow.com/public_html/staging/`
+
+Production uploads to:
+
+`domains/puredentalglasgow.com/public_html/`
+
+If your FTP user’s home differs, edit **`server-dir`** in the workflow YAML.
+
+## Day-to-day (no manual file upload)
+
+```bash
+# From repo root — optional helper:
+./scripts/deploy-via-git-push.sh staging "Footer update"
+
+# Or manually:
+git checkout staging && git push origin staging
+```
+
+Then open **Actions** and confirm **Deploy staging** succeeded. Staging URL: `https://staging.puredentalglasgow.com/`
+
+Production (after merging to main):
+
+```bash
+./scripts/deploy-via-git-push.sh main "Release"
+```
 
 ## If the job fails (FTPS / login)
 
-1. Confirm the same host, user, and password work in **FileZilla**.
-2. In FileZilla, note whether the host uses **explicit FTPS on port 21** or **implicit on 990**.
-3. If you use **port 990** and implicit FTPS, edit the workflow YAML: set `port: 990` and `protocol: ftps-legacy` (see [FTP-Deploy-Action README](https://github.com/SamKirkland/FTP-Deploy-Action)).
-4. **530 Login incorrect:** wrong FTP user/password or wrong server hostname (use the value from **FTP Accounts**, not generic hPanel login).
+See previous steps in this file plus [FTP-Deploy-Action README](https://github.com/SamKirkland/FTP-Deploy-Action). Common fixes:
 
-## Day-to-day commands
+1. Confirm **FileZilla** works with the same host, user, password.
+2. Try **`port: 990`** + **`protocol: ftps-legacy`** in the workflow YAML if implicit FTPS is required.
 
-```bash
-# Staging: commit + push → Action deploys public/ to staging subdomain
-git checkout staging
-git add public/ && git commit -m "Update copy" && git push origin staging
+## Other option: Hostinger Git + webhook
 
-# Production: merge to main + push → Action deploys to live public_html
-git checkout main && git merge staging
-git push origin main
-```
+If you prefer Hostinger to `git pull` from GitHub, read **[HOSTINGER_GIT.md](HOSTINGER_GIT.md)** (mind the **`public/`** subfolder).
 
 ## Security
 
-- Never commit FTP passwords or put them in workflow YAML.
-- Revoke/regenerate the FTP password if it was ever exposed.
-- Optional: restrict **Deploy production** to **GitHub Environments** with required reviewers (Settings → Environments → `production`).
+- Never commit FTP passwords.
+- Revoke/regenerate passwords if leaked.
+- Optionally add GitHub **Environments** + required reviewers for production.

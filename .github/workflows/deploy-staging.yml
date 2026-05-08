@@ -1,5 +1,6 @@
-# Deploy public/ to Hostinger staging when you push the staging branch (or run manually).
-# Configure GitHub repo Secrets first — see docs/GITHUB_ACTIONS.md
+# Deploy ONLY ./public/ to Hostinger staging — no manual zip needed after one-time FTP secret setup.
+# Remote path matches hPanel → Subdomains → staging.puredentalglasgow.com → Directory under public_html/staging
+# If deploy fails, verify FTP user can see this folder after login (edit path below if Hostinger shows a different prefix).
 name: Deploy staging
 
 on:
@@ -29,6 +30,6 @@ jobs:
           port: 21
           security: loose
           local-dir: ./public/
-          server-dir: ${{ secrets.FTP_REMOTE_STAGING }}
+          server-dir: domains/puredentalglasgow.com/public_html/staging/
           log-level: standard
           timeout: 600000

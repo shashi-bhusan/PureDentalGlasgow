@@ -1,0 +1,47 @@
+# One-click deploy from GitHub UI (no git push). Actions → Deploy manual → Run workflow.
+name: Deploy manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Where to upload ./public/
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: deploy-${{ github.event.inputs.target }}
+  cancel-in-progress: true
+
+jobs:
+  ftp-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve remote path
+        id: remote
+        run: |
+          if [ "${{ github.event.inputs.target }}" = "staging" ]; then
+            echo "dir=domains/puredentalglasgow.com/public_html/staging/" >> "$GITHUB_OUTPUT"
+          else
+            echo "dir=domains/puredentalglasgow.com/public_html/" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload to Hostinger (FTPS)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          security: loose
+          local-dir: ./public/
+          server-dir: ${{ steps.remote.outputs.dir }}
+          log-level: standard
+          timeout: 600000
