@@ -26,12 +26,14 @@
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
+  <!--
   <url>
     <loc>http://puredentalglasgow.com/Meet-Our-Team.php</loc>
     <lastmod>2017-06-05T16:29:35-01:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
-  </url>
+  </url> 
+  -->
   <url>
     <loc>http://puredentalglasgow.com/Fees/practice-plan</loc>
     <lastmod>2017-06-05T16:29:35-01:00</lastmod>
