@@ -29,6 +29,15 @@ normalize_path() {
   fi
   [ -z "$d" ] && return 1
   case "$d" in */) ;; *) d="${d}/" ;; esac
+  # Hostinger hPanel File Manager URLs (srv*.hstgr.io) include a virtual "files/" segment; FTPS login cwd usually does not.
+  case "$d" in
+    files/public_html/*)
+      echo "::notice::Removed File-Manager-only prefix \"files/\" from server-dir for FTP (now starts with public_html/)." >&2
+      d="${d#files/}"
+      ;;
+  esac
+  [ -z "$d" ] && return 1
+  case "$d" in */) ;; *) d="${d}/" ;; esac
   printf '%s' "$d"
 }
 
@@ -68,9 +77,3 @@ else
   echo "source=default" >>"$GITHUB_OUTPUT"
   echo "Effective server-dir: $d"
 fi
-
-# hPanel File Manager often shows paths starting with files/ — FTP may use a different tree for the same account.
-case "$d" in *files/*)
-  echo "::warning::Your FTP path contains 'files/'. That string often comes from **File Manager**, not from **FileZilla**. Open FileZilla with the **same** FTP user as GitHub, go to the folder that contains staging **index.html**, and set FTP_REMOTE_STAGING to **that** path (see docs/STAGING.md → Simple checklist)."
-  ;;
-esac
