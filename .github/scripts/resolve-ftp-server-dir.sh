@@ -32,8 +32,16 @@ normalize_path() {
   # Hostinger hPanel File Manager URLs (srv*.hstgr.io) include a virtual "files/" segment; FTPS login cwd usually does not.
   case "$d" in
     files/public_html/*)
-      echo "::notice::Removed File-Manager-only prefix \"files/\" from server-dir for FTP (now starts with public_html/)." >&2
+      echo "::notice::Removed File-Manager-only prefix \"files/\" from server-dir for FTP." >&2
       d="${d#files/}"
+      ;;
+  esac
+  [ -z "$d" ] && return 1
+  # File Manager path is often files/public_html/domains/... but FTP from /home/USER usually starts with domains/ (not public_html/domains/).
+  case "$d" in
+    public_html/domains/*)
+      echo "::notice::Removed leading public_html/ before domains/ (Hostinger FTP account root layout)." >&2
+      d="${d#public_html/}"
       ;;
   esac
   [ -z "$d" ] && return 1
