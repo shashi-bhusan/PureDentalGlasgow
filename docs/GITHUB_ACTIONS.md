@@ -61,12 +61,30 @@ Production (after merging to main):
 ./scripts/deploy-via-git-push.sh main "Release"
 ```
 
-## If the job fails (FTPS / login)
+## If the job fails: **`FTPError: 530 Login incorrect`**
 
-See previous steps in this file plus [FTP-Deploy-Action README](https://github.com/SamKirkland/FTP-Deploy-Action). Common fixes:
+This means **authentication failed** — not the deploy path. The workflow never gets past login.
 
-1. Confirm **FileZilla** works with the same host, user, password.
-2. Try **`port: 990`** + **`protocol: ftps-legacy`** in the workflow YAML if implicit FTPS is required.
+1. **Use an FTP account from Hostinger, not your hPanel login unless they are the same**  
+   hPanel → **Files → FTP Accounts** → open or **Create** an account. Copy the **username** exactly as shown (often `u123456789` or `user@domain` style).
+
+2. **Match the hostname to that account**  
+   In the same screen, use the **FTP hostname** Hostinger shows for **that** account (e.g. `ftp.puredentalglasgow.com` or a server-specific host). Put only the host in **`FTP_SERVER`** (no `https://`, no `ftp://`).
+
+3. **Reset the FTP password** in hPanel, then update **`FTP_PASSWORD`** in GitHub Secrets (no leading/trailing spaces when you paste).
+
+4. **Prove it locally**  
+   In **FileZilla** (or another FTP client), connect with **the same three values** you put in secrets:  
+   - If FileZilla fails → fix Hostinger / password first.  
+   - If FileZilla works on **port 21** with “Use explicit FTP over TLS” but Actions use **990** → add repo **Variables** `FTP_PORT`=`21` and `FTP_PROTOCOL`=`ftps` (see table above).
+
+5. **Re-run the workflow** after updating secrets (Actions → failed run → **Re-run all jobs**).
+
+## If the job fails (other FTPS / TLS errors)
+
+See [FTP-Deploy-Action README](https://github.com/SamKirkland/FTP-Deploy-Action). Try repo **Variables** `FTP_PORT` / `FTP_PROTOCOL` (see table above).
+
+The **Node.js 20 deprecation** warning in the log is **not** the cause of `530`; you can ignore it for now.
 
 ## Other option: Hostinger Git + webhook
 
