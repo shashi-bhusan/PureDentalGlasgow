@@ -18,7 +18,7 @@ Files: `.github/workflows/deploy-staging.yml`, `deploy-production.yml`, `deploy-
 
 | Secret | Where to find it |
 |--------|-------------------|
-| **`FTP_SERVER`** | hPanel → **FTP Accounts** (hostname, e.g. `ftp.puredentalglasgow.com`) |
+| **`FTP_SERVER`** | hPanel → **FTP Accounts** — hostname only (e.g. `ftp.puredentalglasgow.com`, **no** `ftp://` prefix) |
 | **`FTP_USERNAME`** | FTP username (often **not** your hPanel email) |
 | **`FTP_PASSWORD`** | FTP password |
 
@@ -31,6 +31,17 @@ Production uploads to:
 `domains/puredentalglasgow.com/public_html/`
 
 If your FTP user’s home differs, edit **`server-dir`** in the workflow YAML.
+
+## Optional: Repository **Variables** (no secrets — tune FTP mode)
+
+Workflows default to **implicit FTPS** (`protocol: ftps-legacy`, **port 990**), which matches many Hostinger accounts. If deploy still fails, add **Variables** (same Settings page → **Variables** tab):
+
+| Variable | Example when 990 fails | Example when only plain FTP works |
+|----------|------------------------|-------------------------------------|
+| **`FTP_PORT`** | `21` | `21` |
+| **`FTP_PROTOCOL`** | `ftps` (explicit FTPS on 21) | `ftp` |
+
+Leave both variables **unset** to keep defaults (`990` + `ftps-legacy`).
 
 ## Day-to-day (no manual file upload)
 

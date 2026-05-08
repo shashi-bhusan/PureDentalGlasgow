@@ -18,14 +18,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Normalize FTP hostname
+        id: ftp_host
+        env:
+          RAW: ${{ secrets.FTP_SERVER }}
+        run: |
+          h="$RAW"
+          h="${h#ftp://}"
+          h="${h#ftps://}"
+          h="${h%/}"
+          echo "host=$h" >> "$GITHUB_OUTPUT"
+
       - name: Upload to Hostinger (production)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
-          server: ${{ secrets.FTP_SERVER }}
+          server: ${{ steps.ftp_host.outputs.host }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: 21
+          protocol: ${{ vars.FTP_PROTOCOL || 'ftps-legacy' }}
+          port: ${{ vars.FTP_PORT || '990' }}
           security: loose
           local-dir: ./public/
           server-dir: domains/puredentalglasgow.com/public_html/
