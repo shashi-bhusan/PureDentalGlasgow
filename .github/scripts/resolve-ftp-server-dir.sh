@@ -21,6 +21,13 @@ normalize_path() {
   while [[ "$d" == .//* ]] || [[ "$d" == . ]]; do d="${d#./}"; done
   d="${d#/}"
   [ -z "$d" ] && return 1
+  # hPanel "Directory" is often an absolute path: /home/USER/domains/domain.tld/public_html/...
+  # FTP for that same account usually starts at /home/USER/, so strip home/USER/.
+  if [[ "$d" =~ ^home/[A-Za-z0-9._-]+/(.+)$ ]]; then
+    d="${BASH_REMATCH[1]}"
+    echo "::notice::Converted hPanel-style /home/… path to FTP path relative to account root (starts with ${d%%/*}/)." >&2
+  fi
+  [ -z "$d" ] && return 1
   case "$d" in */) ;; *) d="${d}/" ;; esac
   printf '%s' "$d"
 }
