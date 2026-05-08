@@ -19,7 +19,7 @@ Secrets only store **FTP_SERVER**, **FTP_USERNAME**, **FTP_PASSWORD**. Path over
 
 | Variable | When to set |
 |----------|-------------|
-| **`FTP_REMOTE_STAGING`** | Only if defaults fail: path (with trailing `/`) from **FileZilla remote pane** to the folder that contains **`index.html`** for staging. Add as a **Variable** (recommended) or **Secret** — the workflow reads **`vars` first**, then **`secrets`**. Hostinger often chroots under `domains/puredentalglasgow.com/`, so the default is **`public_html/staging/`**. If FTP starts at **account home** (you see `domains/` first), use **`domains/puredentalglasgow.com/public_html/staging/`**. |
+| **`FTP_REMOTE_STAGING`** | Only if defaults fail: path (with trailing `/`) from **FileZilla remote pane** to the folder that contains **`index.html`** for staging. **Variable** (recommended) or **Secret**. Resolution order: **trimmed Variable** if it has real characters; else **trimmed Secret**; else default **`public_html/staging/`**. A **Variable that is only spaces** no longer blocks a Secret. Hostinger often chroots under `domains/puredentalglasgow.com/`, so the default is **`public_html/staging/`**. If FTP starts at **account home** (you see `domains/` first), use **`domains/puredentalglasgow.com/public_html/staging/`**. |
 | **`FTP_REMOTE_PRODUCTION`** | Same for live site (**Variable** or **Secret**); default **`public_html/`** when chrooted under the domain. |
 
 After each **Deploy staging** run, a **verify** step fetches `https://staging.puredentalglasgow.com/` and **fails the workflow** if the new footer text is missing — so a green run means staging really shows the new footer.
@@ -46,7 +46,7 @@ Files: `.github/workflows/deploy-staging.yml`, `deploy-production.yml`, `deploy-
 | **`FTP_USERNAME`** | FTP username (often **not** your hPanel email) |
 | **`FTP_PASSWORD`** | FTP password |
 
-**No path secrets.** Defaults (FTP `server-dir`):
+**Path overrides (optional).** Defaults (FTP `server-dir`):
 
 - **Staging:** `public_html/staging/`
 - **Production:** `public_html/`
@@ -54,6 +54,16 @@ Files: `.github/workflows/deploy-staging.yml`, `deploy-production.yml`, `deploy-
 If uploads went to the wrong tree before (FTP green but site unchanged), you likely had **`domains/...` duplicated under a domain chroot** — the new defaults fix that for typical Hostinger FTP accounts.
 
 Override with **Variables** (or **Secrets** with the same names) `FTP_REMOTE_STAGING` / `FTP_REMOTE_PRODUCTION` if your panel shows a different layout.
+
+### Verify fails: “OLD footer” / no “Healing Waters”
+
+That means **HTTPS is still reading a different `index.html`** than the one Actions uploaded. It is almost always **wrong remote folder**, not curl.
+
+1. In **hPanel → Domains → Subdomains**, open **`staging.puredentalglasgow.com`** and read **Directory** exactly (examples: `public_html/staging`, `public_html/staging.puredentalglasgow.com`, or a custom folder). That folder must match **`FTP_REMOTE_STAGING`** after FTP login (plus a trailing **`/`**).
+2. In **GitHub → Settings → Secrets and variables → Actions**, open the **Variables** tab. If **`FTP_REMOTE_STAGING`** exists there and is **wrong**, it overrides your **Secret** — **delete or correct** the Variable.
+3. In **FileZilla**, after connecting with the **same FTP user** as GitHub, note the path from login root to the folder that already contains **`index.html`** for staging; use that string (trailing `/`, forward slashes, no leading `/`).
+
+After the next run, the **Resolve FTP server-dir** step logs whether the path came from **Variable**, **Secret**, or **default**.
 
 ## Optional: Repository **Variables** (no secrets — tune FTP mode)
 

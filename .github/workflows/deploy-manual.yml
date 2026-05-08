@@ -37,15 +37,11 @@ jobs:
       - name: Resolve remote path
         id: remote
         env:
-          STAGING_VAR: ${{ vars.FTP_REMOTE_STAGING || secrets.FTP_REMOTE_STAGING }}
-          PROD_VAR: ${{ vars.FTP_REMOTE_PRODUCTION || secrets.FTP_REMOTE_PRODUCTION }}
-        run: |
-          if [ "${{ github.event.inputs.target }}" = "staging" ]; then
-            d="${STAGING_VAR:-public_html/staging/}"
-          else
-            d="${PROD_VAR:-public_html/}"
-          fi
-          echo "dir=$d" >> "$GITHUB_OUTPUT"
+          FTP_REMOTE_STAGING_VAR: ${{ vars.FTP_REMOTE_STAGING }}
+          FTP_REMOTE_STAGING_SECRET: ${{ secrets.FTP_REMOTE_STAGING }}
+          FTP_REMOTE_PRODUCTION_VAR: ${{ vars.FTP_REMOTE_PRODUCTION }}
+          FTP_REMOTE_PRODUCTION_SECRET: ${{ secrets.FTP_REMOTE_PRODUCTION }}
+        run: bash .github/scripts/resolve-ftp-server-dir.sh "${{ github.event.inputs.target }}"
 
       - name: Upload to Hostinger (FTPS)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6

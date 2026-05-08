@@ -33,9 +33,13 @@ jobs:
           h="${h%/}"
           echo "host=$h" >> "$GITHUB_OUTPUT"
 
-      - name: Show FTP target path (staging)
-        run: |
-          echo "FTP server-dir=${{ vars.FTP_REMOTE_STAGING || secrets.FTP_REMOTE_STAGING || 'public_html/staging/' }}"
+      # Variable wins over Secret only if non-empty after trim (whitespace-only Variable no longer blocks Secret).
+      - name: Resolve FTP server-dir (staging)
+        id: ftp_dir
+        env:
+          FTP_REMOTE_STAGING_VAR: ${{ vars.FTP_REMOTE_STAGING }}
+          FTP_REMOTE_STAGING_SECRET: ${{ secrets.FTP_REMOTE_STAGING }}
+        run: bash .github/scripts/resolve-ftp-server-dir.sh staging
 
       # Default explicit FTPS on 21 (GitHub runners often time out on 990).
       # Override: Variables FTP_PORT=990 and FTP_PROTOCOL=ftps-legacy if your host requires implicit FTPS.
@@ -49,7 +53,7 @@ jobs:
           port: ${{ vars.FTP_PORT || '21' }}
           security: loose
           local-dir: ./public/
-          server-dir: ${{ vars.FTP_REMOTE_STAGING || secrets.FTP_REMOTE_STAGING || 'public_html/staging/' }}
+          server-dir: ${{ steps.ftp_dir.outputs.dir }}
           log-level: standard
           timeout: 600000
 
@@ -83,7 +87,9 @@ jobs:
           if echo "$html" | grep -q 'Healing Waters'; then
             echo "OK: staging homepage includes new footer."
           else
-            echo "::error::Download succeeded but OLD footer still in HTML (no 'Healing Waters'). FTP likely wrote to the wrong folder."
-            echo "::error::Set FTP_REMOTE_STAGING (repo Variable or Secret) to the FileZilla path that contains staging index.html (trailing /)."
+            echo "::error::Download succeeded but OLD footer still in HTML (no 'Healing Waters'). FTP is not updating the URL's document root."
+            echo "::error::In GitHub: remove or fix repository VARIABLE FTP_REMOTE_STAGING if set (it overrides the Secret). Path must match hPanel → Subdomains → staging → Directory (often public_html/staging/ or public_html/staging.puredentalglasgow.com/)."
+            echo "---- Lines mentioning footer / rights (for debugging) ----"
+            echo "$html" | grep -ni "pure dental\|healing\|maintained\|rights reserved\|copyright" | head -20 || true
             exit 1
           fi

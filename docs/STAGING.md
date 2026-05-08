@@ -27,7 +27,7 @@ These steps are done in **hPanel** for the Pure Dental Glasgow account. Exact la
 
 1. **Subdomain** — Already created for this site:
    - **Subdomain:** `staging.puredentalglasgow.com`
-   - **Directory:** `public_html/staging` (under the `puredentalglasgow.com` domain tree)
+   - **Directory:** whatever **hPanel → Subdomains** shows for this subdomain (often `public_html/staging`, sometimes `public_html/staging.puredentalglasgow.com` or another custom path). **GitHub `FTP_REMOTE_STAGING` must match that folder** (relative to your FTP login root — see **[GITHUB_ACTIONS.md](GITHUB_ACTIONS.md)**).
    - If DNS is not active yet, wait until it shows **Active** in the subdomain list.
 
 2. **Optional: HTTPS**
