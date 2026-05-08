@@ -15,6 +15,8 @@ normalize_path() {
   local d
   d="$(trim "${1:-}")"
   [ -z "$d" ] && return 1
+  # FTP account chrooted to staging document root → use current dir
+  case "$d" in .|./) printf '%s' './'; return 0 ;; esac
   # Relative to FTP login root (Hostinger)
   while [[ "$d" == .//* ]] || [[ "$d" == . ]]; do d="${d#./}"; done
   d="${d#/}"
@@ -54,7 +56,14 @@ elif [ -n "$s" ]; then
   echo "Effective server-dir length=${#d} chars."
 else
   echo "::notice::${var_name} not set — using default ${default}"
-  echo "dir=$default" >>"$GITHUB_OUTPUT"
+  d="$default"
+  echo "dir=$d" >>"$GITHUB_OUTPUT"
   echo "source=default" >>"$GITHUB_OUTPUT"
-  echo "Effective server-dir: $default"
+  echo "Effective server-dir: $d"
 fi
+
+# hPanel File Manager often shows paths starting with files/ — FTP may use a different tree for the same account.
+case "$d" in *files/*)
+  echo "::warning::Your FTP path contains 'files/'. That string often comes from **File Manager**, not from **FileZilla**. Open FileZilla with the **same** FTP user as GitHub, go to the folder that contains staging **index.html**, and set FTP_REMOTE_STAGING to **that** path (see docs/STAGING.md → Simple checklist)."
+  ;;
+esac

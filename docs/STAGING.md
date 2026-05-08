@@ -2,6 +2,33 @@
 
 Use this host for **QA and client review** before deploying the same build from `main` to production (`www.puredentalglasgow.com`).
 
+## Simple checklist (read this first if GitHub shows “OLD footer”)
+
+The workflow is doing what we told it: it uploads your repo’s **`public/`** folder to **one remote folder**. If that folder is **not** the same place Hostinger uses for **`https://staging.puredentalglasgow.com/`**, the deploy step can still be green but the **site stays old**. That is a **path mismatch**, not a random “CI bug”.
+
+Do these in order:
+
+1. **Use the same FTP login as GitHub**  
+   In GitHub you have secrets **`FTP_SERVER`**, **`FTP_USERNAME`**, **`FTP_PASSWORD`**. In **FileZilla**, connect with **exactly those** (not a different FTP user, not “main account” if the secret is a sub-account).
+
+2. **Get the path from FileZilla, not from File Manager**  
+   After login, open folders on the **right (remote)** side until you see the **`index.html`** that really belongs to staging (you can edit a test file and refresh the site to confirm).  
+   Look at the **path / breadcrumb** FileZilla shows for that folder.  
+   **Important:** hPanel **File Manager** sometimes shows **`files/public_html/...`**. FTP often **does not** use the same string. If you copied **`files/public_html/staging/`** from the browser/File Manager, try **`public_html/staging/`** instead (no `files/` prefix), **or** whatever FileZilla actually shows after step 1.
+
+3. **Put that path in GitHub (one place only)**  
+   - Go to **GitHub → your repo → Settings → Secrets and variables → Actions**.  
+   - Open the **Variables** tab. If **`FTP_REMOTE_STAGING`** exists and you are not sure it is correct, **delete it** (a wrong Variable overrides the Secret).  
+   - Open the **Secrets** tab. Set **`FTP_REMOTE_STAGING`** to the path from step 2.  
+   - Use **forward slashes**, end with **`/`**, **no** leading **`/`** (the workflow normalizes this, but keep it simple: e.g. `public_html/staging/`).
+
+4. **Push `staging` again** (or **Actions → Deploy staging → Run workflow**).  
+   When **`verify-staging-footer`** is green, the live page really contains **“Healing Waters”**.
+
+5. **Still wrong?** In **hPanel → Websites → Domains → Subdomains**, click **`staging.puredentalglasgow.com`** and read **Directory** (e.g. `public_html/staging` or `public_html/staging.puredentalglasgow.com`). That folder **must** be the same as in FileZilla for the user from step 1.
+
+Optional **Hostinger fix** (very reliable): create an **FTP account** whose **home directory** is set to the **staging document root** in hPanel. Then in FileZilla you land **inside** staging already; set GitHub **`FTP_REMOTE_STAGING`** to **`.`** (the workflow turns that into **`./`** for the FTP action).
+
 ## Confirmed in hPanel (this project)
 
 | | |
