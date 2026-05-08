@@ -1,7 +1,6 @@
 # Deploy ONLY ./public/ to Hostinger staging.
-# Default server-dir is public_html/staging/ — Hostinger often chroots FTP inside domains/puredentalglasgow.com/,
-# so domains/.../public_html/staging/ would nest wrongly and the LIVE subdomain would never update.
-# Override path: Repository Variable FTP_REMOTE_STAGING, or same name as a Secret (vars preferred).
+# server-dir is relative to the FTP user’s directory after login (see “Diagnostic — FTPS list” in logs).
+# Override: Secret or Variable FTP_REMOTE_STAGING (Variable wins if non-empty after trim).
 name: Deploy staging
 
 on:
@@ -33,6 +32,11 @@ jobs:
           h="${h%/}"
           echo "host=$h" >> "$GITHUB_OUTPUT"
 
+      - name: Warn if Variables tab overrides Secret
+        if: ${{ vars.FTP_REMOTE_STAGING != '' }}
+        run: |
+          echo '::warning::Repository Variable FTP_REMOTE_STAGING is set — it overrides the Secret with the same name. If the path is wrong or old, delete that Variable (Settings → Secrets and variables → Actions → Variables), then re-run.'
+
       # Variable wins over Secret only if non-empty after trim (whitespace-only Variable no longer blocks Secret).
       - name: Resolve FTP server-dir (staging)
         id: ftp_dir
@@ -40,6 +44,21 @@ jobs:
           FTP_REMOTE_STAGING_VAR: ${{ vars.FTP_REMOTE_STAGING }}
           FTP_REMOTE_STAGING_SECRET: ${{ secrets.FTP_REMOTE_STAGING }}
         run: bash .github/scripts/resolve-ftp-server-dir.sh staging
+
+      # Shows what exists at FTP login root — use this to choose server-dir (domains/... vs public_html/...).
+      - name: Diagnostic — FTPS list remote root (first entries)
+        continue-on-error: true
+        env:
+          HOST: ${{ steps.ftp_host.outputs.host }}
+          USER: ${{ secrets.FTP_USERNAME }}
+          PASS: ${{ secrets.FTP_PASSWORD }}
+          PORT: ${{ vars.FTP_PORT || '21' }}
+        run: |
+          echo "::group::FTP directory listing (helps validate FTP_REMOTE_STAGING)"
+          curl -4 -g --ssl-reqd --connect-timeout 30 --max-time 60 \
+            --list-only "ftps://${HOST}:${PORT}/" \
+            --user "${USER}:${PASS}" -k 2>&1 | head -50 || echo "(listing failed — ignore if FTPS differs; use FileZilla + same FTP user.)"
+          echo "::endgroup::"
 
       # Default explicit FTPS on 21 (GitHub runners often time out on 990).
       # Override: Variables FTP_PORT=990 and FTP_PROTOCOL=ftps-legacy if your host requires implicit FTPS.
@@ -115,7 +134,7 @@ jobs:
             echo "OK: staging homepage includes new footer."
           else
             echo "::error::Download succeeded but OLD footer still in HTML (no 'Healing Waters'). FTP is not updating the URL's document root."
-            echo "::error::In GitHub: remove or fix repository VARIABLE FTP_REMOTE_STAGING if set (it overrides the Secret). Path must match hPanel → Subdomains → staging → Directory (often public_html/staging/ or public_html/staging.puredentalglasgow.com/)."
+            echo "::error::In GitHub: delete repository VARIABLE FTP_REMOTE_STAGING if you use a Secret (Variable overrides Secret). Open this run → job ftp-deploy → step **Diagnostic — FTPS list remote root**: if you see **domains** there, server-dir often must start with **domains/...**; if you only see **public_html**, use **public_html/staging/**. Match FileZilla for the **same** FTP user as GitHub."
             echo "---- Lines mentioning footer / rights (for debugging) ----"
             echo "$html" | grep -ni "pure dental\|healing\|maintained\|rights reserved\|copyright" | head -20 || true
             exit 1
