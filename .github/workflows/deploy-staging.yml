@@ -1,6 +1,7 @@
-# Deploy ONLY ./public/ to Hostinger staging — no manual zip needed after one-time FTP secret setup.
-# Remote path matches hPanel → Subdomains → staging.puredentalglasgow.com → Directory under public_html/staging
-# If deploy fails, verify FTP user can see this folder after login (edit path below if Hostinger shows a different prefix).
+# Deploy ONLY ./public/ to Hostinger staging.
+# Default server-dir is public_html/staging/ — Hostinger often chroots FTP inside domains/puredentalglasgow.com/,
+# so domains/.../public_html/staging/ would nest wrongly and the LIVE subdomain would never update.
+# Override with Variable FTP_REMOTE_STAGING if your FTP root is the account home (see docs/GITHUB_ACTIONS.md).
 name: Deploy staging
 
 on:
@@ -32,6 +33,10 @@ jobs:
           h="${h%/}"
           echo "host=$h" >> "$GITHUB_OUTPUT"
 
+      - name: Show FTP target path (staging)
+        run: |
+          echo "FTP server-dir=${{ vars.FTP_REMOTE_STAGING || 'public_html/staging/' }}"
+
       # Default explicit FTPS on 21 (GitHub runners often time out on 990).
       # Override: Variables FTP_PORT=990 and FTP_PROTOCOL=ftps-legacy if your host requires implicit FTPS.
       - name: Upload to Hostinger (staging)
@@ -44,8 +49,7 @@ jobs:
           port: ${{ vars.FTP_PORT || '21' }}
           security: loose
           local-dir: ./public/
-          # Override path if deploy succeeds but site unchanged: repo Variable FTP_REMOTE_STAGING (must end with /), e.g. public_html/staging/
-          server-dir: ${{ vars.FTP_REMOTE_STAGING || 'domains/puredentalglasgow.com/public_html/staging/' }}
+          server-dir: ${{ vars.FTP_REMOTE_STAGING || 'public_html/staging/' }}
           log-level: standard
           timeout: 600000
 

@@ -9,9 +9,15 @@ Use this host for **QA and client review** before deploying the same build from 
 | **URL** | `https://staging.puredentalglasgow.com` |
 | **Document root (server)** | `/home/<your-account>/domains/puredentalglasgow.com/public_html/staging` |
 
-In **File Manager** or **FTP** after login, the same location is usually reachable as:
+In **File Manager** you often navigate from the account root as:
 
 `domains/puredentalglasgow.com/public_html/staging`
+
+Many **FTP** accounts are **chrooted** under `domains/puredentalglasgow.com/`, so after login you only need:
+
+`public_html/staging`
+
+That is the **default `server-dir`** in **GitHub Actions** for this repo (override with Variable **`FTP_REMOTE_STAGING`** if your FTP home is the full account root — see **[GITHUB_ACTIONS.md](GITHUB_ACTIONS.md)**).
 
 Upload the **contents** of this repo’s **`public/`** folder into that **`staging`** directory (so `index.html` sits directly inside `staging`, not nested in another `public` folder).
 
@@ -52,11 +58,7 @@ Typical flow:
 
 ## FTP / upload note
 
-The **remote path** for staging is **not** the same as production `public_html` root. Point uploads at:
-
-`domains/puredentalglasgow.com/public_html/staging`
-
-(or the full path shown in **Subdomains → Directory**). See `scripts/deploy-staging.example.sh` — set `FTP_REMOTE_STAGING_DIR` to that path for `lftp`.
+The **remote path** for staging is **not** the same as production `public_html` root. Point uploads at the folder that contains **`staging/index.html`** — from FileZilla’s remote pane after login, that is often **`public_html/staging/`** (chrooted FTP) or **`domains/puredentalglasgow.com/public_html/staging/`** (home-root FTP). See `scripts/deploy-staging.example.sh` — set `FTP_REMOTE_STAGING_DIR` to that path for `lftp`.
 
 ## Troubleshooting
 

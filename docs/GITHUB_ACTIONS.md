@@ -1,6 +1,6 @@
 # GitHub Actions → Hostinger (automatic — no zip upload after setup)
 
-Workflows sync **`./public/`** to Hostinger over **FTPS** when you push, or when you run a workflow manually. **Remote folders are fixed in YAML** (`domains/puredentalglasgow.com/…`) — you only configure FTP login secrets.
+Workflows sync **`./public/`** to Hostinger over **FTPS** when you push, or when you run a workflow manually. **Default FTP paths are relative to Hostinger’s usual FTP chroot** (`public_html/staging/` for staging, `public_html/` for production). Override with Variables if your account starts in a different folder — see below.
 
 ## Important: **`ETIMEDOUT` on port 21 *and* 990**
 
@@ -19,8 +19,8 @@ Secrets only store **FTP_SERVER**, **FTP_USERNAME**, **FTP_PASSWORD**. Path over
 
 | Variable | When to set |
 |----------|-------------|
-| **`FTP_REMOTE_STAGING`** | If FTP “succeeds” but **staging still shows the old site** — set to the exact remote folder (with trailing `/`) where `index.html` must live, as shown in **FileZilla** after you navigate to staging. Examples: `domains/puredentalglasgow.com/public_html/staging/` or `public_html/staging/` depending on where your FTP session starts. |
-| **`FTP_REMOTE_PRODUCTION`** | Same idea for live `public_html/` if the default path is wrong. |
+| **`FTP_REMOTE_STAGING`** | Only if defaults fail: path (with trailing `/`) from **FileZilla remote pane** to the folder that contains **`index.html`** for staging. Hostinger often chroots you under `domains/puredentalglasgow.com/`, so the workflow default is **`public_html/staging/`**. If your FTP home is the **account root** (you see a `domains/` folder first), use **`domains/puredentalglasgow.com/public_html/staging/`**. |
+| **`FTP_REMOTE_PRODUCTION`** | Same for live site; default **`public_html/`** when chrooted under the domain. |
 
 After each **Deploy staging** run, a **verify** step fetches `https://staging.puredentalglasgow.com/` and **fails the workflow** if the new footer text is missing — so a green run means staging really shows the new footer.
 
@@ -46,15 +46,14 @@ Files: `.github/workflows/deploy-staging.yml`, `deploy-production.yml`, `deploy-
 | **`FTP_USERNAME`** | FTP username (often **not** your hPanel email) |
 | **`FTP_PASSWORD`** | FTP password |
 
-**No path secrets.** Staging uploads to:
+**No path secrets.** Defaults (FTP `server-dir`):
 
-`domains/puredentalglasgow.com/public_html/staging/`
+- **Staging:** `public_html/staging/`
+- **Production:** `public_html/`
 
-Production uploads to:
+If uploads went to the wrong tree before (FTP green but site unchanged), you likely had **`domains/...` duplicated under a domain chroot** — the new defaults fix that for typical Hostinger FTP accounts.
 
-`domains/puredentalglasgow.com/public_html/`
-
-If your FTP user’s home differs, edit **`server-dir`** in the workflow YAML.
+Override with **Variables** `FTP_REMOTE_STAGING` / `FTP_REMOTE_PRODUCTION` if your panel shows a different layout.
 
 ## Optional: Repository **Variables** (no secrets — tune FTP mode)
 

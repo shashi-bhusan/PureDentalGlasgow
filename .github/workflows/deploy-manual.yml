@@ -41,9 +41,9 @@ jobs:
           PROD_VAR: ${{ vars.FTP_REMOTE_PRODUCTION }}
         run: |
           if [ "${{ github.event.inputs.target }}" = "staging" ]; then
-            d="${STAGING_VAR:-domains/puredentalglasgow.com/public_html/staging/}"
+            d="${STAGING_VAR:-public_html/staging/}"
           else
-            d="${PROD_VAR:-domains/puredentalglasgow.com/public_html/}"
+            d="${PROD_VAR:-public_html/}"
           fi
           echo "dir=$d" >> "$GITHUB_OUTPUT"
 
