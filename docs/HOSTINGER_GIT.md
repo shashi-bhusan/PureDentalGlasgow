@@ -20,7 +20,8 @@ Then each **git push** to the chosen branch triggers a pull on Hostinger.
 
 ## Recommendation
 
-- **Fastest to get right with current layout:** [GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) — three secrets, push `staging` / `main`.
-- **Native Git:** ideal only if you confirm Hostinger deploys the **`public`** subfolder into the correct web root.
+- **If GitHub Actions FTP always shows `ETIMEDOUT`:** use **Hostinger Git** (this page) or a **self-hosted runner** — see [GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) (“ETIMEDOUT on port 21 and 990”).
+- **If FTP from Actions works:** [GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) stays the simplest path (`FTP_*` secrets, push `staging` / `main`).
+- **Native Git + `public/`:** ideal only if hPanel lets you deploy a **subfolder** of the repo as the web root, or you restructure so the site lives at the repo root Hostinger deploys.
 
 Official reference: [How to deploy a Git repository in Hostinger](https://support.hostinger.com/en/articles/1583302-how-to-deploy-a-git-repository).

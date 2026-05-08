@@ -2,6 +2,19 @@
 
 Workflows sync **`./public/`** to Hostinger over **FTPS** when you push, or when you run a workflow manually. **Remote folders are fixed in YAML** (`domains/puredentalglasgow.com/…`) — you only configure FTP login secrets.
 
+## Important: **`ETIMEDOUT` on port 21 *and* 990**
+
+If FileZilla from your **own computer** works but GitHub Actions logs show **`connect ETIMEDOUT … :21`** (or `:990`), Hostinger (or a network in between) is often **blocking inbound FTP from cloud / datacenter IP ranges** used by **GitHub-hosted runners**. This is **not** something we can fix in YAML alone.
+
+**Practical options (pick one):**
+
+1. **[Hostinger Git + webhook](HOSTINGER_GIT.md)** — Hostinger’s server **pulls** from GitHub (outbound to `github.com`). FTP is not used from GitHub → Hostinger, so this path usually works when FTP Actions fail.
+2. **Self-hosted GitHub Actions runner** (a small PC or VPS that *can* FTP to Hostinger) — same workflow, different runner.
+3. **Contact Hostinger support** — ask whether FTP from **GitHub Actions** IP ranges can be allowed, or for **SFTP/SSH deploy** details if your plan includes SSH.
+4. **Manual deploy** — zip `public/` and upload in File Manager (reliable fallback).
+
+To **stop wasting minutes** on failing FTP runs while you use Git or manual deploy: add a repository **Variable** **`SKIP_FTP`** = `true` (Settings → Secrets and variables → Actions → **Variables**). The FTP jobs will be skipped; remove the variable when FTP is working again.
+
 ## Workflows
 
 | Workflow | When it runs |
@@ -65,9 +78,9 @@ Production (after merging to main):
 ./scripts/deploy-via-git-push.sh main "Release"
 ```
 
-## If the job fails: **`ETIMEDOUT … :990`**
+## If the job fails: **`ETIMEDOUT` (control socket) on 21 or 990**
 
-GitHub’s cloud runners often **cannot open port 990** to some hosts (firewall / routing). The workflows now default to **port 21 + explicit FTPS** instead. If you still need 990, you must use a runner that can reach it (e.g. self-hosted runner), or ask Hostinger whether **21 explicit FTPS** is supported for your FTP account.
+See the section **“ETIMEDOUT on port 21 and 990”** at the top of this page — that is the usual explanation when **both** ports time out from Actions but **FileZilla works from home**.
 
 ## If the job fails: **`FTPError: 530 Login incorrect`**
 

@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   ftp-deploy:
+    if: ${{ vars.SKIP_FTP != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
