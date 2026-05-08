@@ -26,7 +26,7 @@ Do these in order:
 4. **Push `staging` again** (or **Actions → Deploy staging → Run workflow**).  
    When **`verify-staging-footer`** is green, the live page really contains **“Healing Waters”**.
 
-5. **Still failing?** Open the latest **Deploy staging** run → job **`ftp-deploy`** → expand **Diagnostic — FTPS list remote root**. That list is what your FTP user sees **right after login**. Your **`FTP_REMOTE_STAGING`** must be the path from **that** root to the staging folder (e.g. list shows `domains` → use `domains/puredentalglasgow.com/public_html/staging/`; list shows only `public_html` → use `public_html/staging/`).
+5. **Still failing?** Open the latest **Deploy staging** run → job **`verify-staging-footer`**. If it says **`STAGING_DEPLOY_CHECK.txt` missing**, FTP is **not** writing the folder that serves **`https://staging.puredentalglasgow.com/`** (wrong `FTP_REMOTE_STAGING` for this FTP user). Then open **`ftp-deploy`** → **Diagnostic — FTPS list remote root** and set the path from that listing to your staging folder (e.g. list shows `domains` → `domains/puredentalglasgow.com/public_html/staging/`; only `public_html` at root → `public_html/staging/`).
 
 6. **Still wrong?** In **hPanel → Websites → Domains → Subdomains**, click **`staging.puredentalglasgow.com`** and read **Directory** (e.g. `public_html/staging` or `public_html/staging.puredentalglasgow.com`). That folder **must** be the same as in FileZilla for the user from step 1.
 

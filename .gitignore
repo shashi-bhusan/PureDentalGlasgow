@@ -38,3 +38,6 @@ public-staging-contents.zip
 public-staging-upload.zip
 *.zip
 *.tar.gz
+
+# Written only by CI before staging FTP upload (do not commit)
+public/STAGING_DEPLOY_CHECK.txt

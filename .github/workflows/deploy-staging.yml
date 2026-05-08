@@ -20,6 +20,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Tiny file proves HTTPS document root == FTP server-dir (wrong path → 404 or stale content).
+      - name: Write staging deploy check file
+        run: printf '%s %s\n' "${GITHUB_SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > public/STAGING_DEPLOY_CHECK.txt
+
       # Strip ftp:// from secret — wrong prefix often causes instant failure.
       - name: Normalize FTP hostname
         id: ftp_host
@@ -84,6 +88,7 @@ jobs:
       - name: Verify new footer is live on staging
         env:
           VERIFY_STAGING_SOFT_FAIL: ${{ vars.VERIFY_STAGING_SOFT_FAIL }}
+          EXPECT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           # Hard wall-clock cap: curl --retry-all-errors can otherwise hang past --max-time on some runners.
@@ -98,6 +103,19 @@ jobs:
               -H 'User-Agent: Mozilla/5.0 (compatible; PDG-Staging-Verify/1.0)' \
               "$u"
           }
+          marker_url="https://staging.puredentalglasgow.com/STAGING_DEPLOY_CHECK.txt?_=$(date +%s)"
+          echo "Fetching deploy marker: $marker_url"
+          set +e
+          marker="$(fetch "$marker_url")"
+          mrc=$?
+          set -e
+          if [ "$mrc" -ne 0 ] || ! echo "$marker" | tr -d '\r' | grep -q "^${EXPECT_SHA}"; then
+            echo "::error::STAGING_DEPLOY_CHECK.txt missing or does not start with this commit SHA. FTP is NOT writing the folder that serves https://staging.puredentalglasgow.com/ — FTP_REMOTE_STAGING is still wrong for this FTP user."
+            echo "::error::Open ftp-deploy → **Diagnostic — FTPS list remote root** and set FTP_REMOTE_STAGING to the path from that listing to your staging folder (or create an FTP sub-account whose home IS staging and set path to .)."
+            echo "Marker HTTP exit=$mrc body (first 200 chars): ${marker:0:200}"
+            exit 1
+          fi
+          echo "OK: deploy marker visible at document root (FTP path matches this URL)."
           url="https://staging.puredentalglasgow.com/?_gha=$(date +%s)"
           echo "Fetching: $url"
           set +e
