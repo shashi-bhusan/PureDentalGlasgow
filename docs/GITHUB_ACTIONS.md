@@ -22,7 +22,9 @@ Secrets only store **FTP_SERVER**, **FTP_USERNAME**, **FTP_PASSWORD**. Path over
 | **`FTP_REMOTE_STAGING`** | If FTP “succeeds” but **staging still shows the old site** — set to the exact remote folder (with trailing `/`) where `index.html` must live, as shown in **FileZilla** after you navigate to staging. Examples: `domains/puredentalglasgow.com/public_html/staging/` or `public_html/staging/` depending on where your FTP session starts. |
 | **`FTP_REMOTE_PRODUCTION`** | Same idea for live `public_html/` if the default path is wrong. |
 
-After each **Deploy staging** run, a **verify** step fetches `https://staging.puredentalglasgow.com/` and **fails the workflow** if the new footer text is missing — so a green run means staging really updated (or the verify step could not reach the URL).
+After each **Deploy staging** run, a **verify** step fetches `https://staging.puredentalglasgow.com/` and **fails the workflow** if the new footer text is missing — so a green run means staging really shows the new footer.
+
+If verify fails with **curl exit 28** (timeout), that is usually **GitHub runner → Hostinger HTTPS** (often **IPv6**); the workflow uses **IPv4 (`curl -4`)** and **retries**. If it still times out, open staging in your browser: if the footer is updated, the deploy worked and only the verify hop failed (re-run or ignore). If the footer is still old, fix **`FTP_REMOTE_STAGING`**.
 
 ## Workflows
 

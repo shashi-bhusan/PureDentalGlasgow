@@ -49,7 +49,7 @@ jobs:
           log-level: standard
           timeout: 600000
 
-  # Fails the workflow if FTP reported success but staging URL still has the old footer (wrong remote path or cache).
+  # Confirms staging serves the new footer. curl exit 28 = timeout — often fixed with -4 (IPv4) + retries from GitHub runners.
   verify-staging-footer:
     needs: ftp-deploy
     runs-on: ubuntu-latest
@@ -58,12 +58,28 @@ jobs:
         run: |
           set -euo pipefail
           url="https://staging.puredentalglasgow.com/?_gha=$(date +%s)"
-          html="$(curl -fsSL --max-time 90 "$url")"
+          echo "Fetching: $url"
+          set +e
+          # -4: avoid IPv6 hangs; retries + generous timeouts for cross-region HTTPS
+          html="$(curl -4 -fsSL \
+            --connect-timeout 45 \
+            --max-time 180 \
+            --retry 5 \
+            --retry-delay 10 \
+            --retry-all-errors \
+            "$url")"
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::Could not download staging homepage (curl exit $rc). 28 = operation timed out — runner network/DNS to Hostinger."
+            echo "::error::Open https://staging.puredentalglasgow.com/ in your browser to confirm the site; if the footer is new, you can ignore this flake or re-run."
+            echo "::error::If the footer is still old, fix FTP path Variable FTP_REMOTE_STAGING — see docs/GITHUB_ACTIONS.md"
+            exit 1
+          fi
           if echo "$html" | grep -q 'Healing Waters'; then
             echo "OK: staging homepage includes new footer."
           else
-            echo "::error::Staging still shows the OLD footer after FTP. The upload likely went to the wrong folder."
-            echo "::error::In FileZilla, open the staging folder that contains index.html and copy the remote path from the status bar."
-            echo "::error::Then add GitHub repo Variable FTP_REMOTE_STAGING (trailing slash) to match — see docs/GITHUB_ACTIONS.md"
+            echo "::error::Download succeeded but OLD footer still in HTML (no 'Healing Waters'). FTP likely wrote to the wrong folder."
+            echo "::error::Set GitHub Variable FTP_REMOTE_STAGING to the FileZilla path that contains staging index.html (trailing /)."
             exit 1
           fi
